@@ -1,0 +1,41 @@
+program MapProc;
+{$R+}
+var
+	F: File;
+	Map: array [0..31, 0..31] of Word;
+	Buf: array [0..11, 0..15] of Word;
+	i, j: Integer;
+Begin
+	if ParamCount < 2 then
+		begin
+			Writeln('Usage:');
+			Writeln('FlrProc <origin> <dest>');
+			Halt(1);
+		end;
+
+	Assign(F, ParamStr(1));
+	Reset(F, 1);
+	BlockRead(F, Map, FileSize(F));
+	Close(F);
+
+	Assign(F, ParamStr(2));
+	Rewrite(F, 1);
+
+	for i := 0 to 11 do
+		for j := 0 to 15 do
+			Buf[i, j] := Map[i, j];
+
+	for i := 5 to 6 do
+		for j := 0 to 15 do
+			Buf[i, j] := 0;
+
+	for i := 0 to 4 do
+		for j := 0 to 5 + (i * 2) do
+			begin
+				Buf[i, j] := 0;
+				Buf[11-i, j] := 0;
+			end;
+
+	BlockWrite(F, Buf, SizeOf(Buf));
+	Close(F);
+End.

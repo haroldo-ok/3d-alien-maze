@@ -1,0 +1,30 @@
+program MakeTabl;
+	var Table: array[0..63] of Integer;
+		F: File;
+		i: Integer;
+		l: Longint;
+Begin
+	for i := 0 to 63 do
+		begin
+			l := 32*192;
+			l := l div (i + 32);
+			Table[i] := l;
+		end;
+
+	Assign(F, 'PERSPTAB.DAT');
+	Rewrite(F, 1);
+	BlockWrite(F, Table, SizeOf(Table));
+	Close(F);
+
+	for i := 0 to 63 do
+		begin
+			l := 48*32;
+			l := l div (i + 32);
+			Table[i] := l;
+		end;
+
+	Assign(F, 'YTAB.DAT');
+	Rewrite(F, 1);
+	BlockWrite(F, Table, SizeOf(Table));
+	Close(F);
+End.

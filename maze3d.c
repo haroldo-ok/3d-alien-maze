@@ -38,6 +38,8 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+#define BKG_PALETTE 0
+
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
@@ -163,8 +165,8 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	p = bkg;
 	for (i = 0; i != VIEW_HEIGHT; i++) {
 		for (j = 0, p2 = p + (VIEW_WIDTH-1); j != (VIEW_WIDTH >> 1); j++, p2--) {
-			*p = *top ^ TILE_USE_SPRITE_PALETTE;
-			*p2 = *top ^ (TILE_USE_SPRITE_PALETTE | TILE_FLIPPED_X);
+			*p = *top ^ BKG_PALETTE;
+			*p2 = *top ^ (BKG_PALETTE | TILE_FLIPPED_X);
 
 			top++;
 			p++;
@@ -186,7 +188,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x0F;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x0F - tx;
 					mask |= TILE_FLIPPED_X;
@@ -208,7 +210,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 8) >> 4);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 8) & 0x0F;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (tx & 0x08) {
 					tx = 0x0F - tx;
 					mask |= TILE_FLIPPED_X;
@@ -233,7 +235,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x07;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x07 - tx;
 					mask |= TILE_FLIPPED_X;
@@ -255,7 +257,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 12) >> 3);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 12) & 0x07;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (tx & 0x04) {
 					tx = 0x07 - tx;
 					mask |= TILE_FLIPPED_X;
@@ -280,7 +282,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x03;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x03 - tx;
 					mask |= TILE_FLIPPED_X;
@@ -302,7 +304,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 14) >> 2);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 2) & 0x03;
-				mask = TILE_USE_SPRITE_PALETTE;
+				mask = BKG_PALETTE;
 				if (tx & 0x02) {
 					tx = 0x03 - tx;
 					mask |= TILE_FLIPPED_X;
@@ -413,9 +415,15 @@ void main() {
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(ega_pal);
 
-	SMS_loadTiles(player_til, 16, 32 * 4);
-	SMS_loadTiles(monster_til, 48, 32 * 4);
-	SMS_loadTiles(test_til, 256, 192 * 4);
+	/*
+	SMS_loadTiles(player_til, 16, 32);
+	SMS_loadTiles(monster_til, 48, 32);
+	SMS_loadTiles(test_til, 256, 192);
+	*/
+	SMS_loadTiles(test_til, 0, test_til_size);
+	SMS_loadTiles(test_til, 256, test_til_size);
+	
+	SMS_displayOn();
 
 	for (;;) {
 		joy = SMS_getKeysStatus();

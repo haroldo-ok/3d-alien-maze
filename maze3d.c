@@ -1,17 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include <sms.h>
-
-extern unsigned int test_map[];
-extern unsigned int test_bkg[];
-extern unsigned char test_flr[];
-extern unsigned char test_pal[];
-extern unsigned char ega_pal[];
-extern unsigned char test_til[];
-extern unsigned char player_til[];
-extern unsigned char monster_til[];
-extern int persptab_dat[];
-extern int ytab_dat[];
+#include "lib/SMSlib.h"
+#include "data.h"
 
 /**
 	TODO
@@ -48,6 +38,8 @@ extern int ytab_dat[];
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+unsigned char get_map(int x, int y);
+
 //#define HIDE_SIDE_WALLS
 
 /*
@@ -72,7 +64,7 @@ unsigned char map[] = {
 };
 */
 
-unsigned char map[] = {
+const unsigned char map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 0, 1, 0, 0, 1,
 	1, 0, 0, 0, 1, 0, 1, 1,
@@ -85,12 +77,13 @@ unsigned char map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-char sidewall_offs1[] = {
+const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
-}
-char sidewall_offs2[] = {
+};
+
+const char sidewall_offs2[] = {
 	2, 2, 3, 3
-}
+};
 
 void rotate_dir(int *x, int *y, int dir) {
 	int tmp;
@@ -463,26 +456,3 @@ void main() {
 		tmr++;
 	}
 }
-
-#asm
-._test_map
-	BINARY	"test.map"
-._test_bkg
-	BINARY	"test.bkg"
-._test_flr
-	BINARY	"test.flr"
-._test_pal
-	BINARY	"test.pal"
-._ega_pal
-	BINARY	"ega.pal"
-._test_til
-	BINARY	"test.til"
-._player_til
-	BINARY	"player.til"
-._monster_til
-	BINARY	"monster.til"
-._persptab_dat
-	BINARY	"persptab.dat"
-._ytab_dat
-	BINARY	"ytab.dat"
-#endasm

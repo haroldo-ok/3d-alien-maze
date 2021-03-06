@@ -7,10 +7,10 @@ data.c: data/*
 	folder2c data data
 	
 %.rel : %.c
-	sdcc -c -mz80 --peep-file peep-rules.txt $<
+	sdcc -c -mz80 --peep-file lib/peep-rules.txt $<
 
 $(PRJNAME).sms: $(OBJS)
-	sdcc -o $(PRJNAME).ihx -mz80 --no-std-crt0 --data-loc 0xC000 crt0_sms.rel $(OBJS) SMSlib.lib PSGlib.rel
+	sdcc -o $(PRJNAME).ihx -mz80 --no-std-crt0 --data-loc 0xC000 crt0_sms.rel $(OBJS) SMSlib.lib lib/PSGlib.rel
 	ihx2sms $(PRJNAME).ihx $(PRJNAME).sms	
 
 clean:

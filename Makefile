@@ -7,4 +7,4 @@ maze3d.sms: maze3d.c
 #	smshead maze3d.sms
 	
 clean:
-	$(RM) *.bin *.i *.lib *.op* *.o *~ zcc_opt.def
+	rm *.sms *.sav *.asm *.sym *.rel *.noi *.map *.lst *.lk *.ihx data.*

@@ -363,7 +363,7 @@ void test_spr(int x, int y, int *sprnum, int tile) {
 				sy = y + (j << 4);
 				if ((sy < 0) || (sy > 104)) { // TODO: Improve this. Rewrite the loop, instead.
 				} else {
-					set_sprite(spr, sx, sy, til);
+					//set_sprite(spr, sx, sy, til);
 					spr++;
 				}
 				til += 2;
@@ -409,29 +409,28 @@ void main() {
 	int joy;
 	unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 
-	set_vdp_reg(VDP_REG_FLAGS0, VDP_REG_FLAGS0_CHANGE/* | VDP_REG_FLAGS0_LHS*/);
-	set_vdp_reg(VDP_REG_FLAGS1, VDP_REG_FLAGS1_SCREEN | VDP_REG_FLAGS1_8x16);
-	load_palette(test_pal, 0, 16);
-	load_palette(ega_pal, 16, 16);
+	SMS_setSpriteMode (SPRITEMODE_TALL);
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(ega_pal);
 
-	load_tiles(player_til, 16, 32, 4);
-	load_tiles(monster_til, 48, 32, 4);
-	load_tiles(test_til, 256, 192, 4);
+	SMS_loadTiles(player_til, 16, 32 * 4);
+	SMS_loadTiles(monster_til, 48, 32 * 4);
+	SMS_loadTiles(test_til, 256, 192 * 4);
 
 	for (;;) {
-		joy = read_joypad1();
+		joy = SMS_getKeysStatus();
 
-		if (joy & JOY_UP) {
+		if (joy & PORT_A_KEY_UP) {
 			walk_dir(&x, &y, 0, 1, dir);
 			walked = 1;
-		} else if (joy & JOY_DOWN) {
+		} else if (joy & PORT_A_KEY_DOWN) {
 			walk_dir(&x, &y, 0, -1, dir);
 			walked = 1;
 		}
-		if (joy & JOY_LEFT) {
+		if (joy & PORT_A_KEY_LEFT) {
 			dir = (dir - 1) & 0x03;
 			walked = 1;
-		} else if (joy & JOY_RIGHT) {
+		} else if (joy & PORT_A_KEY_RIGHT) {
 			dir = (dir + 1) & 0x03;
 			walked = 1;
 		}
@@ -453,8 +452,13 @@ void main() {
 		for (i = 0, j = (128 - 40); i != 2; i++, j += 48) {
 			test_spr(j, 48, &sprnum, 48);
 		}
-		set_sprite(sprnum, 208, 208, 0);
+		//set_sprite(sprnum, 208, 208, 0);
 
 		tmr++;
 	}
 }
+
+SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'
+SMS_EMBED_SDSC_HEADER(0,1, 2021,3,06, "Haroldo-OK\\2021", "3D Alien Maze",
+  "A first person survival horror.\n"
+  "Built using devkitSMS & SMSlib - https://github.com/sverx/devkitSMS");

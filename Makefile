@@ -10,7 +10,7 @@ data.c: data/*
 	sdcc -c -mz80 --peep-file lib/peep-rules.txt $<
 
 $(PRJNAME).sms: $(OBJS)
-	sdcc -o $(PRJNAME).ihx -mz80 --no-std-crt0 --data-loc 0xC000 crt0_sms.rel $(OBJS) SMSlib.lib lib/PSGlib.rel
+	sdcc -o $(PRJNAME).ihx -mz80 --no-std-crt0 --data-loc 0xC000 lib/crt0_sms.rel $(OBJS) SMSlib.lib lib/PSGlib.rel
 	ihx2sms $(PRJNAME).ihx $(PRJNAME).sms	
 
 clean:

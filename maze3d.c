@@ -38,6 +38,8 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+#define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
+
 unsigned char get_map(int x, int y);
 
 //#define HIDE_SIDE_WALLS
@@ -161,8 +163,8 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	p = bkg;
 	for (i = 0; i != VIEW_HEIGHT; i++) {
 		for (j = 0, p2 = p + (VIEW_WIDTH-1); j != (VIEW_WIDTH >> 1); j++, p2--) {
-			*p = *top ^ BKG_ATTR_2NDTILESET;
-			*p2 = *top ^ (BKG_ATTR_2NDTILESET | BKG_ATTR_HFLIP);
+			*p = *top ^ TILE_USE_SPRITE_PALETTE;
+			*p2 = *top ^ (TILE_USE_SPRITE_PALETTE | TILE_FLIPPED_X);
 
 			top++;
 			p++;
@@ -184,10 +186,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x0F;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (i > 16) {
 					tx = 0x0F - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = sidewall_offs1[tx];
 				h = VIEW_HEIGHT - (ofs << 1);
@@ -206,10 +208,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 8) >> 4);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 8) & 0x0F;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (tx & 0x08) {
 					tx = 0x0F - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 3;
 
@@ -231,10 +233,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x07;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (i > 16) {
 					tx = 0x07 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = sidewall_offs2[tx];
 				h = VIEW_HEIGHT - (ofs << 1);
@@ -253,10 +255,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 12) >> 3);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 12) & 0x07;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (tx & 0x04) {
 					tx = 0x07 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 2;
 
@@ -278,10 +280,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x03;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (i > 16) {
 					tx = 0x03 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = 4;
 				h = VIEW_HEIGHT - (ofs << 1);
@@ -300,10 +302,10 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 14) >> 2);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 2) & 0x03;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = TILE_USE_SPRITE_PALETTE;
 				if (tx & 0x02) {
 					tx = 0x03 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 1;
 
@@ -322,7 +324,7 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 
 	if (fade == 3) {
 		for (i = 0, p1 = bg1 + VIEW_WIDTH - 1, p2 = bg2; i != VIEW_WIDTH - 2; i += 2, p1 -= 2) {
-			wait_vblank_noint();
+			SMS_waitForVBlank();
 			for (j = 0, p3 = p1; j != VIEW_HEIGHT; j++, p3 += VIEW_WIDTH) {
 				set_bkg_map(p3, 0, j + 1, i + 1, 1);
 			}
@@ -332,7 +334,7 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 		}
 	} else if (fade == 4) {
 		for (i = VIEW_WIDTH - 2, p1 = bg2, p2 = bg1; i; i -= 2, p1 += 2) {
-			wait_vblank_noint();
+			SMS_waitForVBlank();
 			for (j = 0, p3 = p1; j != VIEW_HEIGHT; j++, p3 += VIEW_WIDTH) {
 				set_bkg_map(p3, 0, j + 1, i + 1, 1);
 			}
@@ -350,7 +352,7 @@ void test_spr(int x, int y, int *sprnum, int tile) {
 	int i, j;
 	int til = tile;
 	int spr = *sprnum;
-	int sx, sy
+	int sx, sy;
 
 	for (i = 0; i != 4; i++) {
 		sx = x + (i << 3);
@@ -434,7 +436,7 @@ void main() {
 			walked = 1;
 		}
 
-		wait_vblank_noint();
+		SMS_waitForVBlank();
 
 		if (walked) {
 			draw_view(x, y, dir, bkg);

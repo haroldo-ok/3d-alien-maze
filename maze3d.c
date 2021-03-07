@@ -29,8 +29,6 @@
 #define WALL_TOP_2 (4 << 5)
 #define WALL_TOP_3 (5 << 5)
 
-#define MAP_SHIFT 3
-
 #define BLOCK_SHIFT 5
 
 #define DIR_NORTH 0
@@ -40,50 +38,21 @@
 
 #define BKG_PALETTE 0x100
 
+#define MAP_WIDTH (16)
+#define MAP_HEIGHT (16)
+
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
 
-//#define HIDE_SIDE_WALLS
-
-/*
-unsigned char map[] = {
-	0, 0, 1, 1, 1, 1, 1, 1,
-	0, 0, 1, 0, 0, 0, 0, 1,
-	0, 0, 1, 0, 1, 1, 1, 1,
-	0, 0, 1, 0, 1, 0, 1, 1,
-	0, 0, 1, 0, 0, 0, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1,
-};
-*/
-
-/*
-unsigned char map[] = {
-	0, 1, 1, 1, 1, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 0, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 0, 1, 1, 1, 0, 0, 0,
-};
-*/
-
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
 
-
-const unsigned char map[] = {
-	1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 0, 1, 0, 0, 1,
-	1, 0, 0, 0, 1, 0, 1, 1,
-	1, 0, 1, 0, 1, 0, 0, 1,
-	1, 0, 0, 0, 0, 0, 0, 1,
-	1, 1, 1, 1, 1, 1, 0, 1,
-	1, 1, 0, 1, 0, 0, 0, 1,
-	1, 0, 0, 1, 0, 0, 0, 1,
-	1, 1, 0, 0, 0, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1,
-};
+char map[16][16];
+struct player {
+	int x, y;
+	int dir;
+} player;
 
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
@@ -142,7 +111,7 @@ int walk_spr_dir(int *x, int *y, int dx, int dy, int dir) {
 }
 
 unsigned char get_map(int x, int y) {
-	return map[(y << MAP_SHIFT) + x];
+	return map[y][x];
 }
 
 unsigned char get_map_r(int x, int y, int rx, int ry, int dir) {
@@ -401,10 +370,32 @@ void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
 	test_spr(x, y, sprnum, tile);
 }
 
+void generate_map() {
+	int x, y;
+	
+	// Zeroes out the map
+	for (y = 0; y != MAP_HEIGHT; y++) {
+		for (x = 0; x != MAP_WIDTH; x++) {
+			map[y][x] = 0;
+		}
+	}
+
+	// Fill top and bottom of the map with ones
+	for (int x = 0; x != MAP_WIDTH; x++) {
+		map[0][x] = 1;
+		map[MAP_HEIGHT - 1][x] = 1;
+	}
+	
+	// Fill left and right of the map with ones
+	for (int y = 0; y != MAP_HEIGHT; y++) {
+		map[y][0] = 1;
+		map[y][MAP_WIDTH - 1] = 1;		
+	}
+}
+
 void main() {
 	int x = 3;
 	int y = 1;
-	int tx, ty;
 
 	int i, j;
 
@@ -428,6 +419,8 @@ void main() {
 	SMS_loadTiles(test_til, 256, test_til_size);
 	
 	SMS_displayOn();
+	
+	generate_map();
 
 	for (;;) {
 		joy = SMS_getKeysStatus();

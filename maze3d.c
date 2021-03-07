@@ -116,6 +116,10 @@ int walk_spr_dir(int *x, int *y, int dx, int dy, int dir) {
 }
 
 unsigned char get_map(int x, int y) {
+	if (x < 0 || x >= MAP_WIDTH ||
+		y < 0 || y >= MAP_HEIGHT) {
+		return 0;
+	}
 	return map[y][x];
 }
 
@@ -457,6 +461,21 @@ void generate_map() {
 		}
 	}
 	
+	// Generate exit
+	if (rand() & 1) {
+		// Exit is on the right side
+		y = 1 + ((rand() % ((MAP_HEIGHT - 2) >> 1)) << 1);
+		for (x = MAP_WIDTH - 1; map[y][x]; x--) {
+			map[y][x] = 0;
+		}
+	} else {
+		// Exit is on the bottom side
+		x = 1 + ((rand() % ((MAP_WIDTH - 2) >> 1)) << 1);
+		for (y = MAP_HEIGHT - 1; map[y][x]; y--) {
+			map[y][x] = 0;
+		}
+	}
+	
 	player.x = 1;
 	player.y = 1;
 	player.dir = DIR_SOUTH;
@@ -522,6 +541,6 @@ void main() {
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'
-SMS_EMBED_SDSC_HEADER(0,1, 2021,3,06, "Haroldo-OK\\2021", "3D Alien Maze",
+SMS_EMBED_SDSC_HEADER(0,1, 2021,3,07, "Haroldo-OK\\2021", "3D Alien Maze",
   "A first person survival horror.\n"
   "Built using devkitSMS & SMSlib - https://github.com/sverx/devkitSMS");

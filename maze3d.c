@@ -41,8 +41,8 @@
 
 #define BKG_PALETTE 0x100
 
-#define MAP_WIDTH (8)
-#define MAP_HEIGHT (8)
+#define MAP_WIDTH (32)
+#define MAP_HEIGHT (32)
 
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
@@ -389,52 +389,6 @@ void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
 	test_spr(x, y, sprnum, tile);
 }
 
-void draw_map_spaces(int x, int y, int w, int h) {
-	// Fills the region with zeroes.
-	h--;
-	w--;
-	for (int i = 1; i != h; i++) {
-		for (int j = 1; j != w; j++) {
-			map[y + i][x + j] = 0;
-		}
-	}
-}
-
-void draw_horizontal_wall(char x, char y, char len) {
-	for (char i = 0; i != len; i++) {
-		map[y][x++] = 1;
-	}
-}
-
-void draw_vertical_wall(char x, char y, char len) {
-	for (char i = 0; i != len; i++) {
-		map[y++][x] = 1;
-	}
-}
-
-void generate_divisions(int x, int y, int w, int h) {
-	if (w < 3 || h < 3) {
-		return;
-	}
-	
-	draw_map_spaces(x, y, w, h);
-	int dx = x + ((rand() % (w >> 1) + 1) << 1);
-	int dy = y + ((rand() % (h >> 1) + 1) << 1);
-	
-	draw_horizontal_wall(x, dy, w);
-	draw_vertical_wall(dx, y, h);
-	
-	map[dy][dx - 1] = 0;
-	map[dy][dx + 1] = 0;
-	map[dy - 1][dx] = 0;
-	map[dy + 1][dx] = 0;
-	
-	generate_divisions(x, y, dx - x, dy - y);
-	generate_divisions(dx, y, w + x - dx, dy - y);
-	generate_divisions(x, dy, dx - 1, h + y - dy);
-	generate_divisions(dx, dy, w + x - dx, h + y - dy);
-}
-
 void generate_map() {
 	int x, y;
 	int dx, dy;
@@ -447,56 +401,110 @@ void generate_map() {
 			map[y][x] = 1;
 		}
 	}
-	
-	generate_divisions(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-	/*
-	// Puts a hole at the starting position.
-	map[1][1] = 0;
-	
 	// Puts a hole on every other coordinate.
-	do {
+	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+			// Put a hole there
+			map[y][x] = 0;
+			
+			// Dig a tunnel in a random direction
+			dx = dx2 = x;
+			dy = dy2 = y;
+			switch (rand() & 0x03) {
+			case DIR_NORTH: dy--; dy2 -= 2; break;
+			case DIR_EAST: dx++; dx2 += 2; break;
+			case DIR_SOUTH: dy++; dy2 += 2; break;
+			case DIR_WEST: dx--; dx2 -= 2; break;
+			}
+			
+			// Dig the tunnel
+			if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+				dy2 >= 0 && dy2 < MAP_HEIGHT) {
+				map[dy][dx] = 0;
+				map[dy2][dx2] = 0;
+			}
+		}
+	}
+	
+	char found_unreachable = 1;
+	
+	while (found_unreachable) {
+		found_unreachable = 0;
 		
-		// Count holes on every other coordinate.
-		holes = 0;
-		for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
-			for (x = 1; x < MAP_WIDTH - 1; x += 2) {
-				if (!map[y][x]) {
-					holes++;
+		// Flood fills to find reachable cells in the map
+		map[1][1] = 2;
+		char expanded = 1;
+		while (expanded) {
+			expanded = 0;		
+			for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+				for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+					
+					// If this one is reachable, checks neighbouring cells to see if there's anything that can be reached further
+					if (map[y][x] == 2) {
+						for (char dir = 0; dir <= DIR_WEST; dir++) {
+							dx = dx2 = x;
+							dy = dy2 = y;
+							switch (dir & 0x03) {
+							case DIR_NORTH: dy--; dy2 -= 2; break;
+							case DIR_EAST: dx++; dx2 += 2; break;
+							case DIR_SOUTH: dy++; dy2 += 2; break;
+							case DIR_WEST: dx--; dx2 -= 2; break;
+							}
+							
+							if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+								dy2 >= 0 && dy2 < MAP_HEIGHT &&
+								!map[dy][dx] && map[dy2][dx2] != 2) {
+								// Found a reachable, but unmarked cell. Mark it.
+								map[dy2][dx2] = 2;
+								expanded = 1;
+							}
+						}
+					}
+					
 				}
 			}
 		}
-		
-		// Select a random hole
-		pos = rand() % holes + 1;
+
+		// For each unreachable cell, checks if there are unreachable neighbors
 		for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
 			for (x = 1; x < MAP_WIDTH - 1; x += 2) {
-				if (!map[y][x]) {
-					pos--;
-					if (!pos) {
-						// Dig a hole in a random direction
+				
+				// If this one is reachable, checks neighbouring cells to see if there's any unreachable neighbor
+				if (map[y][x] == 2) {
+					expanded = 0;
+					for (char dir = 0; dir <= DIR_WEST && !expanded; dir++) {
 						dx = dx2 = x;
 						dy = dy2 = y;
-						switch (rand() & 0x03) {
+						switch (dir & 0x03) {
 						case DIR_NORTH: dy--; dy2 -= 2; break;
 						case DIR_EAST: dx++; dx2 += 2; break;
 						case DIR_SOUTH: dy++; dy2 += 2; break;
 						case DIR_WEST: dx--; dx2 -= 2; break;
 						}
 						
-						// Dig the hole
 						if (dx2 >= 0 && dx2 < MAP_WIDTH &&
 							dy2 >= 0 && dy2 < MAP_HEIGHT &&
-							!map[dy2][dx2]) {
+							map[dy][dx] && !map[dy2][dx2]) {
+							// Found a unreachable one; tunnel and mark it.
 							map[dy][dx] = 0;
-							map[dy2][dx2] = 0;
+							map[dy2][dx2] = 2;
+							expanded = 1;
+							found_unreachable = 1;
 						}
 					}
 				}
+				
 			}
 		}
-	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2));
-	*/
+	}
+
+	// Puts a hole on every other coordinate.
+	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+			map[y][x] = 0;
+		}
+	}
 	
 	player.x = 1;
 	player.y = 1;

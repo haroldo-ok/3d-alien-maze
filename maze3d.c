@@ -17,6 +17,9 @@
 #define VIEW_WIDTH (32)
 #define VIEW_HEIGHT (12)
 
+#define MINIMAP_WIDTH (7)
+#define MINIMAP_HEIGHT (7)
+
 #define WALL_OFFS_1 (16 * 12)
 #define WALL_OFFS_2 (WALL_OFFS_1 + 8 * 8)
 #define WALL_OFFS_3 (WALL_OFFS_2 + 4 * 4)
@@ -29,8 +32,6 @@
 #define WALL_TOP_2 (4 << 5)
 #define WALL_TOP_3 (5 << 5)
 
-#define MAP_SHIFT 3
-
 #define BLOCK_SHIFT 5
 
 #define DIR_NORTH 0
@@ -40,50 +41,23 @@
 
 #define BKG_PALETTE 0x100
 
+#define MAP_WIDTH (24)
+#define MAP_HEIGHT (24)
+
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
 
-//#define HIDE_SIDE_WALLS
-
-/*
-unsigned char map[] = {
-	0, 0, 1, 1, 1, 1, 1, 1,
-	0, 0, 1, 0, 0, 0, 0, 1,
-	0, 0, 1, 0, 1, 1, 1, 1,
-	0, 0, 1, 0, 1, 0, 1, 1,
-	0, 0, 1, 0, 0, 0, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1,
-};
-*/
-
-/*
-unsigned char map[] = {
-	0, 1, 1, 1, 1, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 0, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 1, 0, 0, 0, 1, 1, 1,
-	0, 0, 1, 1, 1, 0, 0, 0,
-};
-*/
-
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
 
-
-const unsigned char map[] = {
-	1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 0, 1, 0, 0, 1,
-	1, 0, 0, 0, 1, 0, 1, 1,
-	1, 0, 1, 0, 1, 0, 0, 1,
-	1, 0, 0, 0, 0, 0, 0, 1,
-	1, 1, 1, 1, 1, 1, 0, 1,
-	1, 1, 0, 1, 0, 0, 0, 1,
-	1, 0, 0, 1, 0, 0, 0, 1,
-	1, 1, 0, 0, 0, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1,
-};
+char map[32][32];
+unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
+	
+struct player {
+	int x, y;
+	int dir;
+} player;
 
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
@@ -142,7 +116,11 @@ int walk_spr_dir(int *x, int *y, int dx, int dy, int dir) {
 }
 
 unsigned char get_map(int x, int y) {
-	return map[(y << MAP_SHIFT) + x];
+	if (x < 0 || x >= MAP_WIDTH ||
+		y < 0 || y >= MAP_HEIGHT) {
+		return 0;
+	}
+	return map[y][x];
 }
 
 unsigned char get_map_r(int x, int y, int rx, int ry, int dir) {
@@ -324,6 +302,20 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	}
 }
 
+void draw_mini_map(int x, int y) {
+	int min_x = x - (MINIMAP_WIDTH >> 1);
+	int min_y = y - (MINIMAP_HEIGHT >> 1);
+	unsigned int buffer[MINIMAP_WIDTH];
+	
+	for (int i = 0; i != MINIMAP_HEIGHT; i++) {
+		for (int j = 0; j != MINIMAP_WIDTH; j++) {
+			buffer[j] = get_map(min_x + j, min_y + i) ? 266 : 256;
+		}
+
+		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 16, MINIMAP_WIDTH, 1);
+	}
+}
+
 void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 	int i, j;
 	unsigned int *p1, *p2, *p3;
@@ -351,69 +343,151 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 	}
 
 	set_bkg_map(bg1, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
-//	set_bkg_map(test_flr, 0, 16, VIEW_WIDTH >> 1, VIEW_HEIGHT); // *** DEBUG ***
 }
 
-void test_spr(int x, int y, int *sprnum, int tile) {
-	int i, j;
-	int til = tile;
-	int spr = *sprnum;
-	int sx, sy;
+void generate_map() {
+	int x, y;
+	int dx, dy;
+	int dx2, dy2;
+	
+	// Fills the map with ones.
+	for (y = 0; y != MAP_HEIGHT; y++) {
+		for (x = 0; x != MAP_WIDTH; x++) {
+			map[y][x] = 1;
+		}
+	}
 
-	for (i = 0; i != 4; i++) {
-		sx = x + (i << 3);
-		if ((sx < 0) || (sx > (256 - 8))) {  // TODO: Improve this. Rewrite the loop, instead.
-			til += 6;
-		} else {
-			for (j = 0; j != 3; j++) {
-				sy = y + (j << 4);
-				if ((sy < 0) || (sy > 104)) { // TODO: Improve this. Rewrite the loop, instead.
-				} else {
-					//set_sprite(spr, sx, sy, til);
-					spr++;
+	// Puts a hole on every other coordinate.
+	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+			// Put a hole there
+			map[y][x] = 0;
+			
+			// Dig a tunnel in a random direction
+			dx = dx2 = x;
+			dy = dy2 = y;
+			switch (rand() & 0x03) {
+			case DIR_NORTH: dy--; dy2 -= 2; break;
+			case DIR_EAST: dx++; dx2 += 2; break;
+			case DIR_SOUTH: dy++; dy2 += 2; break;
+			case DIR_WEST: dx--; dx2 -= 2; break;
+			}
+			
+			// Dig the tunnel
+			if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+				dy2 >= 0 && dy2 < MAP_HEIGHT) {
+				map[dy][dx] = 0;
+				map[dy2][dx2] = 0;
+			}
+		}
+	}
+	
+	char found_unreachable = 1;
+	
+	while (found_unreachable) {
+		found_unreachable = 0;
+		
+		// Flood fills to find reachable cells in the map
+		map[1][1] = 2;
+		char expanded = 1;
+		while (expanded) {
+			expanded = 0;		
+			for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+				for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+					
+					// If this one is reachable, checks neighbouring cells to see if there's anything that can be reached further
+					if (map[y][x] == 2) {
+						for (char dir = 0; dir <= DIR_WEST; dir++) {
+							dx = dx2 = x;
+							dy = dy2 = y;
+							switch (dir) {
+							case DIR_NORTH: dy--; dy2 -= 2; break;
+							case DIR_EAST: dx++; dx2 += 2; break;
+							case DIR_SOUTH: dy++; dy2 += 2; break;
+							case DIR_WEST: dx--; dx2 -= 2; break;
+							}
+							
+							if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+								dy2 >= 0 && dy2 < MAP_HEIGHT &&
+								!map[dy][dx] && map[dy2][dx2] != 2) {
+								// Found a reachable, but unmarked cell. Mark it.
+								map[dy2][dx2] = 2;
+								expanded = 1;
+							}
+						}
+					}
+					
 				}
-				til += 2;
+			}
+		}
+
+		// For each unreachable cell, checks if there are unreachable neighbors
+		for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+			for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+				
+				// If this one is reachable, checks neighbouring cells to see if there's any unreachable neighbor
+				if (map[y][x] == 2) {
+					expanded = 0;
+					for (char dir = 0; dir <= DIR_WEST && !expanded; dir++) {
+						dx = dx2 = x;
+						dy = dy2 = y;
+						switch (dir) {
+						case DIR_NORTH: dy--; dy2 -= 2; break;
+						case DIR_EAST: dx++; dx2 += 2; break;
+						case DIR_SOUTH: dy++; dy2 += 2; break;
+						case DIR_WEST: dx--; dx2 -= 2; break;
+						}
+						
+						if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+							dy2 >= 0 && dy2 < MAP_HEIGHT &&
+							map[dy][dx] && !map[dy2][dx2]) {
+							// Found a unreachable one; tunnel and mark it.
+							map[dy][dx] = 0;
+							map[dy2][dx2] = 2;
+							expanded = 1;
+							found_unreachable = 1;
+						}
+					}
+				}
+				
 			}
 		}
 	}
 
-	*sprnum = spr;
-}
-
-void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
-	rotate_dir(&x, &y, dir);
-
-	y += 16;
-
-	if (y < 0) {
-		return;
-	} else if (y > 63) {
-		return;
+	// Puts a hole on every other coordinate.
+	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+			map[y][x] = 0;
+		}
 	}
-
-	/*
-	x = (x * 192) / (y + 32);
-	y = (48 * 32) / (y + 32);
-	*/
-	x = (x * persptab_dat[y]) >> 5;
-	y = ytab_dat[y]; // Supposes that the z coordinate is fixed.
-
-	test_spr(x, y, sprnum, tile);
+	
+	// Generate exit
+	if (rand() & 1) {
+		// Exit is on the right side
+		y = 1 + ((rand() % ((MAP_HEIGHT - 2) >> 1)) << 1);
+		for (x = MAP_WIDTH - 1; map[y][x]; x--) {
+			map[y][x] = 0;
+		}
+	} else {
+		// Exit is on the bottom side
+		x = 1 + ((rand() % ((MAP_WIDTH - 2) >> 1)) << 1);
+		for (y = MAP_HEIGHT - 1; map[y][x]; y--) {
+			map[y][x] = 0;
+		}
+	}
+	
+	player.x = 1;
+	player.y = 1;
+	player.dir = DIR_SOUTH;
 }
 
 void main() {
-	int x = 3;
-	int y = 1;
-	int tx, ty;
-
 	int i, j;
 
-	int dir = DIR_SOUTH;
 	int walked = -1;
 	int tmr = 0;
 	int sprnum;
 	int joy;
-	unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 
 	SMS_setSpriteMode (SPRITEMODE_TALL);
 	SMS_loadBGPalette(test_pal);
@@ -428,49 +502,45 @@ void main() {
 	SMS_loadTiles(test_til, 256, test_til_size);
 	
 	SMS_displayOn();
+	
+	generate_map();
 
 	for (;;) {
 		joy = SMS_getKeysStatus();
 
 		if (joy & PORT_A_KEY_UP) {
-			walk_dir(&x, &y, 0, 1, dir);
+			walk_dir(&player.x, &player.y, 0, 1, player.dir);
 			walked = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
-			walk_dir(&x, &y, 0, -1, dir);
+			walk_dir(&player.x, &player.y, 0, -1, player.dir);
 			walked = 1;
 		}
 		if (joy & PORT_A_KEY_LEFT) {
-			dir = (dir - 1) & 0x03;
+			player.dir = (player.dir - 1) & 0x03;
 			walked = 1;
 		} else if (joy & PORT_A_KEY_RIGHT) {
-			dir = (dir + 1) & 0x03;
+			player.dir = (player.dir + 1) & 0x03;
 			walked = 1;
 		}
 
 		SMS_waitForVBlank();
 
 		if (walked) {
-			draw_view(x, y, dir, bkg);
+			draw_view(player.x, player.y, player.dir, bkg);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+			
+			draw_mini_map(player.x, player.y);
 
 			walked = 0;
 		}
 
 		sprnum = 0;
-		/*
-		test_spr_persp(px-mx-16, py-my-16, dir, &sprnum, 16);
-		test_spr_persp(ex-mx-16, ey-my-16, dir, &sprnum, 48);
-		*/
-		for (i = 0, j = (128 - 40); i != 2; i++, j += 48) {
-			test_spr(j, 48, &sprnum, 48);
-		}
-		//set_sprite(sprnum, 208, 208, 0);
 
 		tmr++;
 	}
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'
-SMS_EMBED_SDSC_HEADER(0,1, 2021,3,06, "Haroldo-OK\\2021", "3D Alien Maze",
+SMS_EMBED_SDSC_HEADER(0,1, 2021,3,07, "Haroldo-OK\\2021", "3D Alien Maze",
   "A first person survival horror.\n"
   "Built using devkitSMS & SMSlib - https://github.com/sverx/devkitSMS");

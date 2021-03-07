@@ -17,6 +17,9 @@
 #define VIEW_WIDTH (32)
 #define VIEW_HEIGHT (12)
 
+#define MINIMAP_WIDTH (7)
+#define MINIMAP_HEIGHT (7)
+
 #define WALL_OFFS_1 (16 * 12)
 #define WALL_OFFS_2 (WALL_OFFS_1 + 8 * 8)
 #define WALL_OFFS_3 (WALL_OFFS_2 + 4 * 4)
@@ -293,6 +296,20 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	}
 }
 
+void draw_mini_map(int x, int y) {
+	int min_x = x - (MINIMAP_WIDTH << 1);
+	int min_y = y - (MINIMAP_HEIGHT << 1);
+	unsigned int buffer[MINIMAP_WIDTH];
+	
+	for (int i = 0; i != MINIMAP_HEIGHT; i++) {
+		for (int j = 0; j != MINIMAP_WIDTH; j++) {
+			buffer[j] = get_map(j, i) ? 266 : 256;
+		}
+
+		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 16, MINIMAP_WIDTH, 1);
+	}
+}
+
 void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 	int i, j;
 	unsigned int *p1, *p2, *p3;
@@ -373,23 +390,18 @@ void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
 void generate_map() {
 	int x, y;
 	
-	// Zeroes out the map
+	// Fills the map with ones.
 	for (y = 0; y != MAP_HEIGHT; y++) {
 		for (x = 0; x != MAP_WIDTH; x++) {
-			map[y][x] = 0;
+			map[y][x] = 1;
 		}
 	}
-
-	// Fill top and bottom of the map with ones
-	for (int x = 0; x != MAP_WIDTH; x++) {
-		map[0][x] = 1;
-		map[MAP_HEIGHT - 1][x] = 1;
-	}
 	
-	// Fill left and right of the map with ones
-	for (int y = 0; y != MAP_HEIGHT; y++) {
-		map[y][0] = 1;
-		map[y][MAP_WIDTH - 1] = 1;		
+	// Puts a hole on every other coordinate.
+	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+			map[y][x] = 0;
+		}
 	}
 	
 	player.x = 1;
@@ -445,6 +457,8 @@ void main() {
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+			
+			draw_mini_map(player.x, player.y);
 
 			walked = 0;
 		}

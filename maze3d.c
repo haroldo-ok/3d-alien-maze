@@ -41,8 +41,8 @@
 
 #define BKG_PALETTE 0x100
 
-#define MAP_WIDTH (32)
-#define MAP_HEIGHT (32)
+#define MAP_WIDTH (8)
+#define MAP_HEIGHT (8)
 
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
@@ -389,6 +389,52 @@ void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
 	test_spr(x, y, sprnum, tile);
 }
 
+void draw_map_spaces(int x, int y, int w, int h) {
+	// Fills the region with zeroes.
+	h--;
+	w--;
+	for (int i = 1; i != h; i++) {
+		for (int j = 1; j != w; j++) {
+			map[y + i][x + j] = 0;
+		}
+	}
+}
+
+void draw_horizontal_wall(char x, char y, char len) {
+	for (char i = 0; i != len; i++) {
+		map[y][x++] = 1;
+	}
+}
+
+void draw_vertical_wall(char x, char y, char len) {
+	for (char i = 0; i != len; i++) {
+		map[y++][x] = 1;
+	}
+}
+
+void generate_divisions(int x, int y, int w, int h) {
+	if (w < 3 || h < 3) {
+		return;
+	}
+	
+	draw_map_spaces(x, y, w, h);
+	int dx = x + ((rand() % (w >> 1) + 1) << 1);
+	int dy = y + ((rand() % (h >> 1) + 1) << 1);
+	
+	draw_horizontal_wall(x, dy, w);
+	draw_vertical_wall(dx, y, h);
+	
+	map[dy][dx - 1] = 0;
+	map[dy][dx + 1] = 0;
+	map[dy - 1][dx] = 0;
+	map[dy + 1][dx] = 0;
+	
+	generate_divisions(x, y, dx - x, dy - y);
+	generate_divisions(dx, y, w + x - dx, dy - y);
+	generate_divisions(x, dy, dx - 1, h + y - dy);
+	generate_divisions(dx, dy, w + x - dx, h + y - dy);
+}
+
 void generate_map() {
 	int x, y;
 	int dx, dy;
@@ -401,7 +447,10 @@ void generate_map() {
 			map[y][x] = 1;
 		}
 	}
+	
+	generate_divisions(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
+	/*
 	// Puts a hole at the starting position.
 	map[1][1] = 0;
 	
@@ -437,7 +486,8 @@ void generate_map() {
 						
 						// Dig the hole
 						if (dx2 >= 0 && dx2 < MAP_WIDTH &&
-							dy2 >= 0 && dy2 < MAP_HEIGHT) {
+							dy2 >= 0 && dy2 < MAP_HEIGHT &&
+							!map[dy2][dx2]) {
 							map[dy][dx] = 0;
 							map[dy2][dx2] = 0;
 						}
@@ -445,7 +495,8 @@ void generate_map() {
 				}
 			}
 		}
-	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2) / 2);
+	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2));
+	*/
 	
 	player.x = 1;
 	player.y = 1;

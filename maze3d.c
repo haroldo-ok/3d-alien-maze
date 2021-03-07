@@ -38,7 +38,7 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
-#define BKG_PALETTE 0
+#define BKG_PALETTE 0x100
 
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
@@ -67,6 +67,10 @@ unsigned char map[] = {
 	0, 0, 1, 1, 1, 0, 0, 0,
 };
 */
+
+const unsigned int *test_map_2 = test_map;
+const unsigned int *test_bkg_2 = test_bkg;
+
 
 const unsigned char map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1,
@@ -197,7 +201,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_0 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_0 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -217,7 +221,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				}
 				tx <<= 3;
 
-				for (j = 0, p = top + WALL_TOP_1, p2 = test_bkg + WALL_OFFS_1 + tx; j != 8; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_1, p2 = test_bkg_2 + WALL_OFFS_1 + tx; j != 8; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -244,7 +248,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_1 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_1 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -264,7 +268,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				}
 				tx <<= 2;
 
-				for (j = 0, p = top + WALL_TOP_2, p2 = test_bkg + WALL_OFFS_2 + tx; j != 4; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_2, p2 = test_bkg_2 + WALL_OFFS_2 + tx; j != 4; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -291,7 +295,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_2 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_2 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -311,7 +315,7 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				}
 				tx <<= 1;
 
-				for (j = 0, p = top + WALL_TOP_3, p2 = test_bkg + WALL_OFFS_3 + tx; j != 2; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_3, p2 = test_bkg_2 + WALL_OFFS_3 + tx; j != 2; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -420,7 +424,7 @@ void main() {
 	SMS_loadTiles(monster_til, 48, 32);
 	SMS_loadTiles(test_til, 256, 192);
 	*/
-	SMS_loadTiles(test_til, 0, test_til_size);
+	//SMS_loadTiles(test_til, 0, test_til_size);
 	SMS_loadTiles(test_til, 256, test_til_size);
 	
 	SMS_displayOn();

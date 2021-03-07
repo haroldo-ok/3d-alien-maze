@@ -1,17 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include <sms.h>
-
-extern unsigned int test_map[];
-extern unsigned int test_bkg[];
-extern unsigned char test_flr[];
-extern unsigned char test_pal[];
-extern unsigned char ega_pal[];
-extern unsigned char test_til[];
-extern unsigned char player_til[];
-extern unsigned char monster_til[];
-extern int persptab_dat[];
-extern int ytab_dat[];
+#include "lib/SMSlib.h"
+#include "data.h"
 
 /**
 	TODO
@@ -48,6 +38,12 @@ extern int ytab_dat[];
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+#define BKG_PALETTE 0x100
+
+#define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
+
+unsigned char get_map(int x, int y);
+
 //#define HIDE_SIDE_WALLS
 
 /*
@@ -72,7 +68,11 @@ unsigned char map[] = {
 };
 */
 
-unsigned char map[] = {
+const unsigned int *test_map_2 = test_map;
+const unsigned int *test_bkg_2 = test_bkg;
+
+
+const unsigned char map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 0, 1, 0, 0, 1,
 	1, 0, 0, 0, 1, 0, 1, 1,
@@ -85,12 +85,13 @@ unsigned char map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-char sidewall_offs1[] = {
+const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
-}
-char sidewall_offs2[] = {
+};
+
+const char sidewall_offs2[] = {
 	2, 2, 3, 3
-}
+};
 
 void rotate_dir(int *x, int *y, int dir) {
 	int tmp;
@@ -168,8 +169,8 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	p = bkg;
 	for (i = 0; i != VIEW_HEIGHT; i++) {
 		for (j = 0, p2 = p + (VIEW_WIDTH-1); j != (VIEW_WIDTH >> 1); j++, p2--) {
-			*p = *top ^ BKG_ATTR_2NDTILESET;
-			*p2 = *top ^ (BKG_ATTR_2NDTILESET | BKG_ATTR_HFLIP);
+			*p = *top ^ BKG_PALETTE;
+			*p2 = *top ^ (BKG_PALETTE | TILE_FLIPPED_X);
 
 			top++;
 			p++;
@@ -191,16 +192,16 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x0F;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x0F - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = sidewall_offs1[tx];
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_0 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_0 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -213,14 +214,14 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 8) >> 4);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 8) & 0x0F;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (tx & 0x08) {
 					tx = 0x0F - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 3;
 
-				for (j = 0, p = top + WALL_TOP_1, p2 = test_bkg + WALL_OFFS_1 + tx; j != 8; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_1, p2 = test_bkg_2 + WALL_OFFS_1 + tx; j != 8; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -238,16 +239,16 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x07;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x07 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = sidewall_offs2[tx];
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_1 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_1 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -260,14 +261,14 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 12) >> 3);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 12) & 0x07;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (tx & 0x04) {
 					tx = 0x07 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 2;
 
-				for (j = 0, p = top + WALL_TOP_2, p2 = test_bkg + WALL_OFFS_2 + tx; j != 4; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_2, p2 = test_bkg_2 + WALL_OFFS_2 + tx; j != 4; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -285,16 +286,16 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			}
 			if (ok && get_map_r(x, y, rx, ry, dir)) {
 				tx = i & 0x03;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (i > 16) {
 					tx = 0x03 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				ofs = 4;
 				h = VIEW_HEIGHT - (ofs << 1);
 				tx = (tx << 3) + (tx << 2); // Same as tx *= 12;
 
-				for (j = 0, p = top + (ofs << 5), p2 = test_bkg + SIDE_OFFS_2 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + (ofs << 5), p2 = test_bkg_2 + SIDE_OFFS_2 + tx + ofs; j != h; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -307,14 +308,14 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 			rx = ((i - 14) >> 2);
 			if (get_map_r(x, y, rx, ry, dir)) {
 				tx = (i - 2) & 0x03;
-				mask = BKG_ATTR_2NDTILESET;
+				mask = BKG_PALETTE;
 				if (tx & 0x02) {
 					tx = 0x03 - tx;
-					mask |= BKG_ATTR_HFLIP;
+					mask |= TILE_FLIPPED_X;
 				}
 				tx <<= 1;
 
-				for (j = 0, p = top + WALL_TOP_3, p2 = test_bkg + WALL_OFFS_3 + tx; j != 2; j++, p += VIEW_WIDTH, p2++) {
+				for (j = 0, p = top + WALL_TOP_3, p2 = test_bkg_2 + WALL_OFFS_3 + tx; j != 2; j++, p += VIEW_WIDTH, p2++) {
 					*p = *p2 ^ mask;
 				}
 				found = 1;
@@ -329,7 +330,7 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 
 	if (fade == 3) {
 		for (i = 0, p1 = bg1 + VIEW_WIDTH - 1, p2 = bg2; i != VIEW_WIDTH - 2; i += 2, p1 -= 2) {
-			wait_vblank_noint();
+			SMS_waitForVBlank();
 			for (j = 0, p3 = p1; j != VIEW_HEIGHT; j++, p3 += VIEW_WIDTH) {
 				set_bkg_map(p3, 0, j + 1, i + 1, 1);
 			}
@@ -339,7 +340,7 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 		}
 	} else if (fade == 4) {
 		for (i = VIEW_WIDTH - 2, p1 = bg2, p2 = bg1; i; i -= 2, p1 += 2) {
-			wait_vblank_noint();
+			SMS_waitForVBlank();
 			for (j = 0, p3 = p1; j != VIEW_HEIGHT; j++, p3 += VIEW_WIDTH) {
 				set_bkg_map(p3, 0, j + 1, i + 1, 1);
 			}
@@ -357,7 +358,7 @@ void test_spr(int x, int y, int *sprnum, int tile) {
 	int i, j;
 	int til = tile;
 	int spr = *sprnum;
-	int sx, sy
+	int sx, sy;
 
 	for (i = 0; i != 4; i++) {
 		sx = x + (i << 3);
@@ -368,7 +369,7 @@ void test_spr(int x, int y, int *sprnum, int tile) {
 				sy = y + (j << 4);
 				if ((sy < 0) || (sy > 104)) { // TODO: Improve this. Rewrite the loop, instead.
 				} else {
-					set_sprite(spr, sx, sy, til);
+					//set_sprite(spr, sx, sy, til);
 					spr++;
 				}
 				til += 2;
@@ -414,34 +415,39 @@ void main() {
 	int joy;
 	unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 
-	set_vdp_reg(VDP_REG_FLAGS0, VDP_REG_FLAGS0_CHANGE/* | VDP_REG_FLAGS0_LHS*/);
-	set_vdp_reg(VDP_REG_FLAGS1, VDP_REG_FLAGS1_SCREEN | VDP_REG_FLAGS1_8x16);
-	load_palette(test_pal, 0, 16);
-	load_palette(ega_pal, 16, 16);
+	SMS_setSpriteMode (SPRITEMODE_TALL);
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(ega_pal);
 
-	load_tiles(player_til, 16, 32, 4);
-	load_tiles(monster_til, 48, 32, 4);
-	load_tiles(test_til, 256, 192, 4);
+	/*
+	SMS_loadTiles(player_til, 16, 32);
+	SMS_loadTiles(monster_til, 48, 32);
+	SMS_loadTiles(test_til, 256, 192);
+	*/
+	//SMS_loadTiles(test_til, 0, test_til_size);
+	SMS_loadTiles(test_til, 256, test_til_size);
+	
+	SMS_displayOn();
 
 	for (;;) {
-		joy = read_joypad1();
+		joy = SMS_getKeysStatus();
 
-		if (joy & JOY_UP) {
+		if (joy & PORT_A_KEY_UP) {
 			walk_dir(&x, &y, 0, 1, dir);
 			walked = 1;
-		} else if (joy & JOY_DOWN) {
+		} else if (joy & PORT_A_KEY_DOWN) {
 			walk_dir(&x, &y, 0, -1, dir);
 			walked = 1;
 		}
-		if (joy & JOY_LEFT) {
+		if (joy & PORT_A_KEY_LEFT) {
 			dir = (dir - 1) & 0x03;
 			walked = 1;
-		} else if (joy & JOY_RIGHT) {
+		} else if (joy & PORT_A_KEY_RIGHT) {
 			dir = (dir + 1) & 0x03;
 			walked = 1;
 		}
 
-		wait_vblank_noint();
+		SMS_waitForVBlank();
 
 		if (walked) {
 			draw_view(x, y, dir, bkg);
@@ -458,31 +464,13 @@ void main() {
 		for (i = 0, j = (128 - 40); i != 2; i++, j += 48) {
 			test_spr(j, 48, &sprnum, 48);
 		}
-		set_sprite(sprnum, 208, 208, 0);
+		//set_sprite(sprnum, 208, 208, 0);
 
 		tmr++;
 	}
 }
 
-#asm
-._test_map
-	BINARY	"test.map"
-._test_bkg
-	BINARY	"test.bkg"
-._test_flr
-	BINARY	"test.flr"
-._test_pal
-	BINARY	"test.pal"
-._ega_pal
-	BINARY	"ega.pal"
-._test_til
-	BINARY	"test.til"
-._player_til
-	BINARY	"player.til"
-._monster_til
-	BINARY	"monster.til"
-._persptab_dat
-	BINARY	"persptab.dat"
-._ytab_dat
-	BINARY	"ytab.dat"
-#endasm
+SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'
+SMS_EMBED_SDSC_HEADER(0,1, 2021,3,06, "Haroldo-OK\\2021", "3D Alien Maze",
+  "A first person survival horror.\n"
+  "Built using devkitSMS & SMSlib - https://github.com/sverx/devkitSMS");

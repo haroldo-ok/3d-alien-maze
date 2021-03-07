@@ -1,10 +1,17 @@
+PRJNAME := maze3d
+OBJS := data.rel maze3d.rel
 
-all: maze3d.sms
+all: $(PRJNAME).sms
 
-maze3d.sms: maze3d.c
-	zcc +sms maze3d.c -o maze3d.sms -m
-	map2sym maze3d.map maze3d.sym
-#	smshead maze3d.sms
+data.c: data/*
+	folder2c data data
 	
+%.rel : %.c
+	sdcc -c -mz80 --peep-file lib/peep-rules.txt $<
+
+$(PRJNAME).sms: $(OBJS)
+	sdcc -o $(PRJNAME).ihx -mz80 --no-std-crt0 --data-loc 0xC000 lib/crt0_sms.rel $(OBJS) SMSlib.lib lib/PSGlib.rel
+	ihx2sms $(PRJNAME).ihx $(PRJNAME).sms	
+
 clean:
-	$(RM) *.bin *.i *.lib *.op* *.o *~ zcc_opt.def
+	rm *.sms *.sav *.asm *.sym *.rel *.noi *.map *.lst *.lk *.ihx data.*

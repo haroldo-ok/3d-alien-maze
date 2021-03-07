@@ -41,8 +41,8 @@
 
 #define BKG_PALETTE 0x100
 
-#define MAP_WIDTH (16)
-#define MAP_HEIGHT (16)
+#define MAP_WIDTH (32)
+#define MAP_HEIGHT (32)
 
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
@@ -51,7 +51,9 @@ unsigned char get_map(int x, int y);
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
 
-char map[16][16];
+char map[32][32];
+unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
+	
 struct player {
 	int x, y;
 	int dir;
@@ -443,7 +445,7 @@ void generate_map() {
 				}
 			}
 		}
-	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2));
+	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2) / 2);
 	
 	player.x = 1;
 	player.y = 1;
@@ -457,7 +459,6 @@ void main() {
 	int tmr = 0;
 	int sprnum;
 	int joy;
-	unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 
 	SMS_setSpriteMode (SPRITEMODE_TALL);
 	SMS_loadBGPalette(test_pal);

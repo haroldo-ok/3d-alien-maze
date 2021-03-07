@@ -297,13 +297,13 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 }
 
 void draw_mini_map(int x, int y) {
-	int min_x = x - (MINIMAP_WIDTH << 1);
-	int min_y = y - (MINIMAP_HEIGHT << 1);
+	int min_x = x - (MINIMAP_WIDTH >> 1);
+	int min_y = y - (MINIMAP_HEIGHT >> 1);
 	unsigned int buffer[MINIMAP_WIDTH];
 	
 	for (int i = 0; i != MINIMAP_HEIGHT; i++) {
 		for (int j = 0; j != MINIMAP_WIDTH; j++) {
-			buffer[j] = get_map(j, i) ? 266 : 256;
+			buffer[j] = get_map(min_x + j, min_y + i) ? 266 : 256;
 		}
 
 		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 16, MINIMAP_WIDTH, 1);
@@ -389,6 +389,9 @@ void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
 
 void generate_map() {
 	int x, y;
+	int dx, dy;
+	int dx2, dy2;
+	int holes, pos;
 	
 	// Fills the map with ones.
 	for (y = 0; y != MAP_HEIGHT; y++) {
@@ -396,13 +399,51 @@ void generate_map() {
 			map[y][x] = 1;
 		}
 	}
+
+	// Puts a hole at the starting position.
+	map[1][1] = 0;
 	
 	// Puts a hole on every other coordinate.
-	for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
-		for (x = 1; x < MAP_WIDTH - 1; x += 2) {
-			map[y][x] = 0;
+	do {
+		
+		// Count holes on every other coordinate.
+		holes = 0;
+		for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+			for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+				if (!map[y][x]) {
+					holes++;
+				}
+			}
 		}
-	}
+		
+		// Select a random hole
+		pos = rand() % holes + 1;
+		for (y = 1; y < MAP_HEIGHT - 1; y += 2) {
+			for (x = 1; x < MAP_WIDTH - 1; x += 2) {
+				if (!map[y][x]) {
+					pos--;
+					if (!pos) {
+						// Dig a hole in a random direction
+						dx = dx2 = x;
+						dy = dy2 = y;
+						switch (rand() & 0x03) {
+						case DIR_NORTH: dy--; dy2 -= 2; break;
+						case DIR_EAST: dx++; dx2 += 2; break;
+						case DIR_SOUTH: dy++; dy2 += 2; break;
+						case DIR_WEST: dx--; dx2 -= 2; break;
+						}
+						
+						// Dig the hole
+						if (dx2 >= 0 && dx2 < MAP_WIDTH &&
+							dy2 >= 0 && dy2 < MAP_HEIGHT) {
+							map[dy][dx] = 0;
+							map[dy2][dx2] = 0;
+						}
+					}
+				}
+			}
+		}
+	} while (holes < ((MAP_WIDTH - 1) >> 2) * ((MAP_HEIGHT - 1) >> 2));
 	
 	player.x = 1;
 	player.y = 1;

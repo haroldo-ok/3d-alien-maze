@@ -339,61 +339,12 @@ void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
 	}
 
 	set_bkg_map(bg1, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
-//	set_bkg_map(test_flr, 0, 16, VIEW_WIDTH >> 1, VIEW_HEIGHT); // *** DEBUG ***
-}
-
-void test_spr(int x, int y, int *sprnum, int tile) {
-	int i, j;
-	int til = tile;
-	int spr = *sprnum;
-	int sx, sy;
-
-	for (i = 0; i != 4; i++) {
-		sx = x + (i << 3);
-		if ((sx < 0) || (sx > (256 - 8))) {  // TODO: Improve this. Rewrite the loop, instead.
-			til += 6;
-		} else {
-			for (j = 0; j != 3; j++) {
-				sy = y + (j << 4);
-				if ((sy < 0) || (sy > 104)) { // TODO: Improve this. Rewrite the loop, instead.
-				} else {
-					//set_sprite(spr, sx, sy, til);
-					spr++;
-				}
-				til += 2;
-			}
-		}
-	}
-
-	*sprnum = spr;
-}
-
-void test_spr_persp(int x, int y, int dir, int *sprnum, int tile) {
-	rotate_dir(&x, &y, dir);
-
-	y += 16;
-
-	if (y < 0) {
-		return;
-	} else if (y > 63) {
-		return;
-	}
-
-	/*
-	x = (x * 192) / (y + 32);
-	y = (48 * 32) / (y + 32);
-	*/
-	x = (x * persptab_dat[y]) >> 5;
-	y = ytab_dat[y]; // Supposes that the z coordinate is fixed.
-
-	test_spr(x, y, sprnum, tile);
 }
 
 void generate_map() {
 	int x, y;
 	int dx, dy;
 	int dx2, dy2;
-	int holes, pos;
 	
 	// Fills the map with ones.
 	for (y = 0; y != MAP_HEIGHT; y++) {
@@ -565,14 +516,6 @@ void main() {
 		}
 
 		sprnum = 0;
-		/*
-		test_spr_persp(px-mx-16, py-my-16, dir, &sprnum, 16);
-		test_spr_persp(ex-mx-16, ey-my-16, dir, &sprnum, 48);
-		*/
-		for (i = 0, j = (128 - 40); i != 2; i++, j += 48) {
-			test_spr(j, 48, &sprnum, 48);
-		}
-		//set_sprite(sprnum, 208, 208, 0);
 
 		tmr++;
 	}

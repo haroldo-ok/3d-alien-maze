@@ -391,15 +391,15 @@ void generate_map() {
 		map[y][0] = 1;
 		map[y][MAP_WIDTH - 1] = 1;		
 	}
+	
+	player.x = 1;
+	player.y = 1;
+	player.dir = DIR_SOUTH;
 }
 
 void main() {
-	int x = 3;
-	int y = 1;
-
 	int i, j;
 
-	int dir = DIR_SOUTH;
 	int walked = -1;
 	int tmr = 0;
 	int sprnum;
@@ -426,24 +426,24 @@ void main() {
 		joy = SMS_getKeysStatus();
 
 		if (joy & PORT_A_KEY_UP) {
-			walk_dir(&x, &y, 0, 1, dir);
+			walk_dir(&player.x, &player.y, 0, 1, player.dir);
 			walked = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
-			walk_dir(&x, &y, 0, -1, dir);
+			walk_dir(&player.x, &player.y, 0, -1, player.dir);
 			walked = 1;
 		}
 		if (joy & PORT_A_KEY_LEFT) {
-			dir = (dir - 1) & 0x03;
+			player.dir = (player.dir - 1) & 0x03;
 			walked = 1;
 		} else if (joy & PORT_A_KEY_RIGHT) {
-			dir = (dir + 1) & 0x03;
+			player.dir = (player.dir + 1) & 0x03;
 			walked = 1;
 		}
 
 		SMS_waitForVBlank();
 
 		if (walked) {
-			draw_view(x, y, dir, bkg);
+			draw_view(player.x, player.y, player.dir, bkg);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
 
 			walked = 0;

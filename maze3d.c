@@ -41,8 +41,8 @@
 
 #define BKG_PALETTE 0x100
 
-#define MAP_WIDTH (32)
-#define MAP_HEIGHT (32)
+#define MAP_WIDTH (24)
+#define MAP_HEIGHT (24)
 
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
@@ -400,7 +400,7 @@ void generate_map() {
 						for (char dir = 0; dir <= DIR_WEST; dir++) {
 							dx = dx2 = x;
 							dy = dy2 = y;
-							switch (dir & 0x03) {
+							switch (dir) {
 							case DIR_NORTH: dy--; dy2 -= 2; break;
 							case DIR_EAST: dx++; dx2 += 2; break;
 							case DIR_SOUTH: dy++; dy2 += 2; break;
@@ -431,7 +431,7 @@ void generate_map() {
 					for (char dir = 0; dir <= DIR_WEST && !expanded; dir++) {
 						dx = dx2 = x;
 						dy = dy2 = y;
-						switch (dir & 0x03) {
+						switch (dir) {
 						case DIR_NORTH: dy--; dy2 -= 2; break;
 						case DIR_EAST: dx++; dx2 += 2; break;
 						case DIR_SOUTH: dy++; dy2 += 2; break;

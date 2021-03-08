@@ -67,6 +67,12 @@ const char sidewall_offs2[] = {
 	2, 2, 3, 3
 };
 
+/*
+const unsigned char monster_palette[] = {
+	
+};
+*/
+
 void rotate_dir(int *x, int *y, int dir) {
 	int tmp;
 
@@ -513,7 +519,8 @@ void main() {
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
 	SMS_loadTiles(test_til, 256, test_til_size);
-	SMS_loadPSGaidencompressedTilesatAddr (monster_full_tiles_psgcompr, 2);
+	//SMS_loadTiles(monster_full_tiles_bin, 2, monster_full_tiles_bin_size);
+	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 		
 	SMS_initSprites();
 	draw_monster();

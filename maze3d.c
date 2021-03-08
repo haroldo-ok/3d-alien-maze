@@ -481,6 +481,23 @@ void generate_map() {
 	player.dir = DIR_SOUTH;
 }
 
+void draw_monster() {
+	int x = 100;
+	int y = 8;
+	int sx;
+	unsigned char tile = 2;
+	
+	for (char i = 5; i; i--) {
+		sx = x;
+		for (char j = 7; j; j--) {
+			SMS_addSprite(sx, y, tile);
+			sx += 8;
+			tile += 2;
+		}
+		y += 16;
+	}
+}
+
 void main() {
 	int i, j;
 
@@ -489,20 +506,22 @@ void main() {
 	int sprnum;
 	int joy;
 
+	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
+	
 	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(ega_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
 
-	/*
-	SMS_loadTiles(player_til, 16, 32);
-	SMS_loadTiles(monster_til, 48, 32);
-	SMS_loadTiles(test_til, 256, 192);
-	*/
-	//SMS_loadTiles(test_til, 0, test_til_size);
 	SMS_loadTiles(test_til, 256, test_til_size);
-	
-	SMS_displayOn();
-	
+	SMS_loadPSGaidencompressedTilesatAddr (monster_full_tiles_psgcompr, 2);
+		
+	SMS_initSprites();
+	draw_monster();
+	SMS_finalizeSprites();
+	SMS_copySpritestoSAT();
+
+	SMS_displayOn();	
+
 	generate_map();
 
 	for (;;) {
@@ -523,7 +542,12 @@ void main() {
 			walked = 1;
 		}
 
+		SMS_initSprites();
+		draw_monster();
+		SMS_finalizeSprites();
+		
 		SMS_waitForVBlank();
+		SMS_copySpritestoSAT();
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);

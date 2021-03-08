@@ -428,10 +428,10 @@ void generate_map() {
 				// If this one is reachable, checks neighbouring cells to see if there's any unreachable neighbor
 				if (map[y][x] == 2) {
 					expanded = 0;
-					for (char dir = 0; dir <= DIR_WEST && !expanded; dir++) {
+					for (char tries = 3; tries && !expanded; tries--) {
 						dx = dx2 = x;
 						dy = dy2 = y;
-						switch (dir) {
+						switch (rand() & 0x03) {
 						case DIR_NORTH: dy--; dy2 -= 2; break;
 						case DIR_EAST: dx++; dx2 += 2; break;
 						case DIR_SOUTH: dy++; dy2 += 2; break;

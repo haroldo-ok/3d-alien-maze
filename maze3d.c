@@ -501,7 +501,7 @@ void generate_map() {
 	player.y = 1;
 	player.dir = DIR_SOUTH;
 	
-	monster.x = 1;
+	monster.x = 3;
 	monster.y = 1;
 }
 
@@ -568,6 +568,29 @@ void draw_monster_size(char size) {
 	}
 }
 
+draw_monster() {
+	// Check player's line of sight to verify if it can see the monster
+	for (int dist = 1; dist < 4; dist++) {
+		int x = 0;
+		int y = dist;		
+		rotate_dir(&x, &y, player.dir);
+		
+		x += player.x;
+		y += player.y;
+		
+		if (get_map(x, y)) {
+			// Found a wall: abort.
+			return;
+		}
+		
+		if (monster.x == x && monster.y == y) {
+			// Found the monster: draw it.
+			draw_monster_size(dist - 1);
+			return;
+		}
+	}
+}
+
 void main() {
 	int walked = -1;
 	int tmr = 0;
@@ -613,9 +636,7 @@ void main() {
 		}
 
 		SMS_initSprites();
-		draw_monster_size(SIZE_FULL);
-		//draw_half_size_monster();
-		//draw_quarter_size_monster();
+		draw_monster();
 		SMS_finalizeSprites();
 		
 		SMS_waitForVBlank();

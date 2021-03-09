@@ -65,6 +65,8 @@ struct player {
 
 struct monster {
 	int x, y;	
+	unsigned char move_ctl;
+	
 	unsigned int anim, anim_y;
 	
 	unsigned char palette[16];
@@ -591,6 +593,59 @@ draw_monster() {
 	}
 }
 
+move_monster() {
+	// Move at 66% of player's speed.
+	monster.move_ctl += 256 / 3;
+	if (monster.move_ctl < 256 * 2 / 3) {	
+		int tx = monster.x;
+		int ty = monster.y;
+		char tried = 0;
+		char moved = 0;
+		
+		// Try to move in the X axis
+		if (player.x < monster.x) {
+			tx--;
+			tried = 1;
+		} else if (player.x > monster.x) {
+			tx++;
+			tried = 1;
+		}
+		
+		if (tried) {
+			if (get_map(tx, ty)) {
+				// Hit a wall: abort.
+				tx = monster.x;
+				tried = 0;
+			} else {
+				// No wall: move there.
+				moved = 1;
+			}
+		}
+		
+		if (!moved) {
+			// Try to move in the Y axis
+			if (player.y < monster.y) {
+				ty--;
+				tried = 1;
+			} else if (player.y > monster.y) {
+				ty++;
+				tried = 1;
+			}
+			
+			if (!get_map(tx, ty)) {
+				// No wall: move there.
+				moved = 1;
+			}
+		}
+		
+		if (moved) {
+			// Can move: do it.
+			monster.x = tx;
+			monster.y = ty;
+		}
+	}
+}
+
 void main() {
 	int walked = -1;
 	int tmr = 0;
@@ -633,6 +688,10 @@ void main() {
 		} else if (joy & PORT_A_KEY_RIGHT) {
 			player.dir = (player.dir + 1) & 0x03;
 			walked = 1;
+		}
+		
+		if (walked) {
+			move_monster();
 		}
 
 		SMS_initSprites();

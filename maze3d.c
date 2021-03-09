@@ -59,6 +59,11 @@ struct player {
 	int dir;
 } player;
 
+struct monster {
+	int x, y;	
+	unsigned int anim, anim_y;
+} monster;
+
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
 };
@@ -493,16 +498,34 @@ void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
 	}
 }
 
-void draw_monster() {
-	draw_meta_sprite((256 - 56) / 2, 8, 7, 5, 2);
+void animate_monster() {
+	unsigned int delta = (monster.anim >> 3);	
+	monster.anim_y = delta & 0x08 ? delta & 0x07 : 7 - (delta & 0x07);
+	monster.anim++;
+}
+
+void draw_monster() {	
+	animate_monster();	
+	draw_meta_sprite(
+		(256 - 56) / 2, 
+		8 + monster.anim_y, 
+		7, 5, 2);
 }
 
 void draw_half_size_monster() {
-	draw_meta_sprite((256 - 24) / 2, 8 + (VIEW_HEIGHT * 8 - 48) / 2, 3, 3, 72);
+	animate_monster();
+	draw_meta_sprite(
+		(256 - 24) / 2, 
+		8 + (VIEW_HEIGHT * 8 - 48) / 2 + (monster.anim_y >> 1), 
+		3, 3, 72);
 }
 
 void draw_quarter_size_monster() {
-	draw_meta_sprite((256 - 16) / 2, 8 + (VIEW_HEIGHT * 8 - 32) / 2, 2, 2, 90);
+	animate_monster();
+	draw_meta_sprite(
+		(256 - 16) / 2, 
+		8 + (VIEW_HEIGHT * 8 - 32) / 2 + (monster.anim_y >> 2), 
+		2, 2, 90);
 }
 
 
@@ -552,9 +575,7 @@ void main() {
 
 		SMS_initSprites();
 		//draw_monster();
-		// 8 4 2
-		draw_half_size_monster();
-		//draw_quarter_size_monster();
+		draw_quarter_size_monster();
 		SMS_finalizeSprites();
 		
 		SMS_waitForVBlank();

@@ -482,7 +482,7 @@ void generate_map() {
 }
 
 void draw_monster() {
-	int x = 100;
+	int x = (256 - 56) / 2;
 	int y = 8;
 	int sx;
 	unsigned char tile = 2;
@@ -498,6 +498,24 @@ void draw_monster() {
 	}
 }
 
+void draw_half_size_monster() {
+	int x = (256 - 24) / 2;
+	int y = 8 + (VIEW_HEIGHT * 8 - 48) / 2;
+	int sx;
+	unsigned char tile = 72;
+	
+	for (char i = 3; i; i--) {
+		sx = x;
+		for (char j = 3; j; j--) {
+			SMS_addSprite(sx, y, tile);
+			sx += 8;
+			tile += 2;
+		}
+		y += 16;
+	}
+}
+
+
 void main() {
 	int walked = -1;
 	int tmr = 0;
@@ -512,6 +530,7 @@ void main() {
 
 	SMS_loadTiles(test_til, 256, test_til_size);
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
+	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
 		
 	SMS_initSprites();
 	draw_monster();
@@ -541,7 +560,9 @@ void main() {
 		}
 
 		SMS_initSprites();
-		draw_monster();
+		//draw_monster();
+		// 8 4 2
+		draw_half_size_monster();
 		SMS_finalizeSprites();
 		
 		SMS_waitForVBlank();

@@ -44,6 +44,10 @@
 #define MAP_WIDTH (24)
 #define MAP_HEIGHT (24)
 
+#define SIZE_FULL (0)
+#define SIZE_HALF (1)
+#define SIZE_QUARTER (2)
+
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
@@ -496,6 +500,9 @@ void generate_map() {
 	player.x = 1;
 	player.y = 1;
 	player.dir = DIR_SOUTH;
+	
+	monster.x = 1;
+	monster.y = 1;
 }
 
 void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
@@ -535,30 +542,31 @@ void animate_monster() {
 	monster.palette[13] = monster_pal_brain_anim[monster.plt_frame_2];
 }
 
-void draw_monster() {	
+void draw_monster_size(char size) {
 	animate_monster();	
-	draw_meta_sprite(
-		(256 - 56) / 2, 
-		8 + monster.anim_y, 
-		7, 5, 2);
+	switch (size) {
+	case SIZE_FULL:
+		draw_meta_sprite(
+			(256 - 56) / 2, 
+			8 + monster.anim_y, 
+			7, 5, 2);
+		break;
+		
+	case SIZE_HALF:
+		draw_meta_sprite(
+			(256 - 24) / 2, 
+			8 + (VIEW_HEIGHT * 8 - 48) / 2 + (monster.anim_y >> 1), 
+			3, 3, 72);
+		break;
+	
+	case SIZE_QUARTER:
+		draw_meta_sprite(
+			(256 - 16) / 2, 
+			8 + (VIEW_HEIGHT * 8 - 32) / 2 + (monster.anim_y >> 2), 
+			2, 2, 90);
+		break;
+	}
 }
-
-void draw_half_size_monster() {
-	animate_monster();
-	draw_meta_sprite(
-		(256 - 24) / 2, 
-		8 + (VIEW_HEIGHT * 8 - 48) / 2 + (monster.anim_y >> 1), 
-		3, 3, 72);
-}
-
-void draw_quarter_size_monster() {
-	animate_monster();
-	draw_meta_sprite(
-		(256 - 16) / 2, 
-		8 + (VIEW_HEIGHT * 8 - 32) / 2 + (monster.anim_y >> 2), 
-		2, 2, 90);
-}
-
 
 void main() {
 	int walked = -1;
@@ -578,7 +586,7 @@ void main() {
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
 		
 	SMS_initSprites();
-	draw_monster();
+	draw_monster_size(SIZE_FULL);
 	SMS_finalizeSprites();
 	SMS_copySpritestoSAT();
 
@@ -605,7 +613,7 @@ void main() {
 		}
 
 		SMS_initSprites();
-		draw_monster();
+		draw_monster_size(SIZE_FULL);
 		//draw_half_size_monster();
 		//draw_quarter_size_monster();
 		SMS_finalizeSprites();

@@ -481,55 +481,28 @@ void generate_map() {
 	player.dir = DIR_SOUTH;
 }
 
-void draw_monster() {
-	int x = (256 - 56) / 2;
-	int y = 8;
-	int sx;
-	unsigned char tile = 2;
-	
-	for (char i = 5; i; i--) {
-		sx = x;
-		for (char j = 7; j; j--) {
+void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
+	for (char i = h; i; i--) {
+		int sx = x;
+		for (char j = w; j; j--) {
 			SMS_addSprite(sx, y, tile);
 			sx += 8;
 			tile += 2;
 		}
 		y += 16;
 	}
+}
+
+void draw_monster() {
+	draw_meta_sprite((256 - 56) / 2, 8, 7, 5, 2);
 }
 
 void draw_half_size_monster() {
-	int x = (256 - 24) / 2;
-	int y = 8 + (VIEW_HEIGHT * 8 - 48) / 2;
-	int sx;
-	unsigned char tile = 72;
-	
-	for (char i = 3; i; i--) {
-		sx = x;
-		for (char j = 3; j; j--) {
-			SMS_addSprite(sx, y, tile);
-			sx += 8;
-			tile += 2;
-		}
-		y += 16;
-	}
+	draw_meta_sprite((256 - 24) / 2, 8 + (VIEW_HEIGHT * 8 - 48) / 2, 3, 3, 72);
 }
 
 void draw_quarter_size_monster() {
-	int x = (256 - 16) / 2;
-	int y = 8 + (VIEW_HEIGHT * 8 - 32) / 2;
-	int sx;
-	unsigned char tile = 90;
-	
-	for (char i = 2; i; i--) {
-		sx = x;
-		for (char j = 2; j; j--) {
-			SMS_addSprite(sx, y, tile);
-			sx += 8;
-			tile += 2;
-		}
-		y += 16;
-	}
+	draw_meta_sprite((256 - 16) / 2, 8 + (VIEW_HEIGHT * 8 - 32) / 2, 2, 2, 90);
 }
 
 
@@ -580,8 +553,8 @@ void main() {
 		SMS_initSprites();
 		//draw_monster();
 		// 8 4 2
-		//draw_half_size_monster();
-		draw_quarter_size_monster();
+		draw_half_size_monster();
+		//draw_quarter_size_monster();
 		SMS_finalizeSprites();
 		
 		SMS_waitForVBlank();

@@ -44,6 +44,10 @@
 #define MAP_WIDTH (24)
 #define MAP_HEIGHT (24)
 
+#define SIZE_FULL (0)
+#define SIZE_HALF (1)
+#define SIZE_QUARTER (2)
+
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
@@ -58,6 +62,26 @@ struct player {
 	int x, y;
 	int dir;
 } player;
+
+struct monster {
+	int x, y;	
+	unsigned char move_ctl;
+	
+	unsigned int anim, anim_y;
+	
+	unsigned char palette[16];
+	char plt_frame_1, plt_frame_2;
+} monster;
+
+const unsigned char monster_pal_eye_anim[] = {
+  0x05, 0x06, 0x0A, 0x0B, 0x0F, 0x0F, 0x1F, 0x1F, 0x2F, 0x3F, 
+  0x2F, 0x1F, 0x1F, 0x0F, 0x0F, 0x0B, 0x0A, 0x06
+};
+
+const unsigned char monster_pal_brain_anim[] = {
+  0x01, 0x02, 0x02, 0x03, 0x03, 0x17, 0x2B,
+  0x17, 0x03, 0x03, 0x02
+};
 
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
@@ -142,7 +166,6 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	unsigned int mask;
 	int found, ok;
 
-//	memset(bkg, 0, VIEW_WIDTH*VIEW_HEIGHT*2);
 	top = test_flr;
 	p = bkg;
 	for (i = 0; i != VIEW_HEIGHT; i++) {
@@ -428,10 +451,10 @@ void generate_map() {
 				// If this one is reachable, checks neighbouring cells to see if there's any unreachable neighbor
 				if (map[y][x] == 2) {
 					expanded = 0;
-					for (char dir = 0; dir <= DIR_WEST && !expanded; dir++) {
+					for (char tries = 3; tries && !expanded; tries--) {
 						dx = dx2 = x;
 						dy = dy2 = y;
-						switch (dir) {
+						switch (rand() & 0x03) {
 						case DIR_NORTH: dy--; dy2 -= 2; break;
 						case DIR_EAST: dx++; dx2 += 2; break;
 						case DIR_SOUTH: dy++; dy2 += 2; break;
@@ -479,30 +502,174 @@ void generate_map() {
 	player.x = 1;
 	player.y = 1;
 	player.dir = DIR_SOUTH;
+	
+	monster.x = 3;
+	monster.y = 1;
+}
+
+void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
+	for (char i = h; i; i--) {
+		int sx = x;
+		for (char j = w; j; j--) {
+			SMS_addSprite(sx, y, tile);
+			sx += 8;
+			tile += 2;
+		}
+		y += 16;
+	}
+}
+
+void animate_monster() {
+	monster.anim++;
+
+	if (monster.plt_frame_1 >= sizeof(monster_pal_eye_anim)) {
+	  monster.plt_frame_1 = 0;
+	}
+	if (monster.anim & 0x01) {
+		monster.plt_frame_1++;
+	}
+	
+	if (monster.plt_frame_2 >= sizeof(monster_pal_brain_anim)) {
+	  monster.plt_frame_2 = 0;
+	}
+	if (!(monster.anim & 0x03)) {
+		monster.plt_frame_2++;
+	}
+
+	unsigned int delta = (monster.anim >> 3);	
+	monster.anim_y = delta & 0x08 ? delta & 0x07 : 7 - (delta & 0x07);
+	
+	memcpy(monster.palette, monster_full_palette_bin, 16);
+	monster.palette[15] = monster_pal_eye_anim[monster.plt_frame_1];
+	monster.palette[13] = monster_pal_brain_anim[monster.plt_frame_2];
+}
+
+void draw_monster_size(char size) {
+	animate_monster();	
+	switch (size) {
+	case SIZE_FULL:
+		draw_meta_sprite(
+			(256 - 56) / 2, 
+			8 + monster.anim_y, 
+			7, 5, 2);
+		break;
+		
+	case SIZE_HALF:
+		draw_meta_sprite(
+			(256 - 24) / 2, 
+			8 + (VIEW_HEIGHT * 8 - 48) / 2 + (monster.anim_y >> 1), 
+			3, 3, 72);
+		break;
+	
+	case SIZE_QUARTER:
+		draw_meta_sprite(
+			(256 - 16) / 2, 
+			8 + (VIEW_HEIGHT * 8 - 32) / 2 + (monster.anim_y >> 2), 
+			2, 2, 90);
+		break;
+	}
+}
+
+draw_monster() {
+	// Check player's line of sight to verify if it can see the monster
+	for (int dist = 1; dist < 4; dist++) {
+		int x = 0;
+		int y = dist;		
+		rotate_dir(&x, &y, player.dir);
+		
+		x += player.x;
+		y += player.y;
+		
+		if (get_map(x, y)) {
+			// Found a wall: abort.
+			return;
+		}
+		
+		if (monster.x == x && monster.y == y) {
+			// Found the monster: draw it.
+			draw_monster_size(dist - 1);
+			return;
+		}
+	}
+}
+
+move_monster() {
+	// Move at 66% of player's speed.
+	monster.move_ctl += 256 / 3;
+	if (monster.move_ctl < 256 * 2 / 3) {	
+		int tx = monster.x;
+		int ty = monster.y;
+		char tried = 0;
+		char moved = 0;
+		
+		// Try to move in the X axis
+		if (player.x < monster.x) {
+			tx--;
+			tried = 1;
+		} else if (player.x > monster.x) {
+			tx++;
+			tried = 1;
+		}
+		
+		if (tried) {
+			if (get_map(tx, ty)) {
+				// Hit a wall: abort.
+				tx = monster.x;
+				tried = 0;
+			} else {
+				// No wall: move there.
+				moved = 1;
+			}
+		}
+		
+		if (!moved) {
+			// Try to move in the Y axis
+			if (player.y < monster.y) {
+				ty--;
+				tried = 1;
+			} else if (player.y > monster.y) {
+				ty++;
+				tried = 1;
+			}
+			
+			if (!get_map(tx, ty)) {
+				// No wall: move there.
+				moved = 1;
+			}
+		}
+		
+		if (moved) {
+			// Can move: do it.
+			monster.x = tx;
+			monster.y = ty;
+		}
+	}
 }
 
 void main() {
-	int i, j;
-
 	int walked = -1;
 	int tmr = 0;
 	int sprnum;
 	int joy;
 
+	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
+	
 	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(ega_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
 
-	/*
-	SMS_loadTiles(player_til, 16, 32);
-	SMS_loadTiles(monster_til, 48, 32);
-	SMS_loadTiles(test_til, 256, 192);
-	*/
-	//SMS_loadTiles(test_til, 0, test_til_size);
 	SMS_loadTiles(test_til, 256, test_til_size);
-	
-	SMS_displayOn();
-	
+	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
+	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
+	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
+		
+	SMS_initSprites();
+	draw_monster_size(SIZE_FULL);
+	SMS_finalizeSprites();
+	SMS_copySpritestoSAT();
+
+	SMS_displayOn();	
+
 	generate_map();
 
 	for (;;) {
@@ -522,8 +689,18 @@ void main() {
 			player.dir = (player.dir + 1) & 0x03;
 			walked = 1;
 		}
+		
+		if (walked) {
+			move_monster();
+		}
 
+		SMS_initSprites();
+		draw_monster();
+		SMS_finalizeSprites();
+		
 		SMS_waitForVBlank();
+		SMS_copySpritestoSAT();
+		SMS_loadSpritePalette(monster.palette);
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);

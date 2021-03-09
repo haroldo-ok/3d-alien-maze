@@ -72,6 +72,11 @@ const unsigned char monster_pal_eye_anim[] = {
   0x2F, 0x1F, 0x1F, 0x0F, 0x0F, 0x0B, 0x0A, 0x06
 };
 
+const unsigned char monster_pal_brain_anim[] = {
+  0x01, 0x02, 0x02, 0x03, 0x03, 0x17, 0x2B,
+  0x17, 0x03, 0x03, 0x02
+};
+
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
 };
@@ -514,12 +519,20 @@ void animate_monster() {
 	if (monster.anim & 0x01) {
 		monster.plt_frame_1++;
 	}
+	
+	if (monster.plt_frame_2 >= sizeof(monster_pal_brain_anim)) {
+	  monster.plt_frame_2 = 0;
+	}
+	if (!(monster.anim & 0x03)) {
+		monster.plt_frame_2++;
+	}
 
 	unsigned int delta = (monster.anim >> 3);	
 	monster.anim_y = delta & 0x08 ? delta & 0x07 : 7 - (delta & 0x07);
 	
 	memcpy(monster.palette, monster_full_palette_bin, 16);
 	monster.palette[15] = monster_pal_eye_anim[monster.plt_frame_1];
+	monster.palette[13] = monster_pal_brain_anim[monster.plt_frame_2];
 }
 
 void draw_monster() {	

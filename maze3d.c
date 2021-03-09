@@ -62,7 +62,15 @@ struct player {
 struct monster {
 	int x, y;	
 	unsigned int anim, anim_y;
+	
+	unsigned char palette[16];
+	char plt_frame_1, plt_frame_2;
 } monster;
+
+const unsigned char monster_pal_eye_anim[] = {
+  0x05, 0x06, 0x0A, 0x0B, 0x0F, 0x0F, 0x1F, 0x1F, 0x2F, 0x3F, 
+  0x2F, 0x1F, 0x1F, 0x0F, 0x0F, 0x0B, 0x0A, 0x06
+};
 
 const char sidewall_offs1[] = {
 	0, 0, 0, 0,	0, 0, 1, 1
@@ -147,7 +155,6 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 	unsigned int mask;
 	int found, ok;
 
-//	memset(bkg, 0, VIEW_WIDTH*VIEW_HEIGHT*2);
 	top = test_flr;
 	p = bkg;
 	for (i = 0; i != VIEW_HEIGHT; i++) {
@@ -499,9 +506,20 @@ void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
 }
 
 void animate_monster() {
+	monster.anim++;
+
+	if (monster.plt_frame_1 >= sizeof(monster_pal_eye_anim)) {
+	  monster.plt_frame_1 = 0;
+	}
+	if (monster.anim & 0x01) {
+		monster.plt_frame_1++;
+	}
+
 	unsigned int delta = (monster.anim >> 3);	
 	monster.anim_y = delta & 0x08 ? delta & 0x07 : 7 - (delta & 0x07);
-	monster.anim++;
+	
+	memcpy(monster.palette, monster_full_palette_bin, 16);
+	monster.palette[15] = monster_pal_eye_anim[monster.plt_frame_1];
 }
 
 void draw_monster() {	
@@ -574,12 +592,14 @@ void main() {
 		}
 
 		SMS_initSprites();
-		//draw_monster();
-		draw_quarter_size_monster();
+		draw_monster();
+		//draw_half_size_monster();
+		//draw_quarter_size_monster();
 		SMS_finalizeSprites();
 		
 		SMS_waitForVBlank();
 		SMS_copySpritestoSAT();
+		SMS_loadSpritePalette(monster.palette);
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);

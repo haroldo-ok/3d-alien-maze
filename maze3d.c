@@ -646,6 +646,57 @@ move_monster() {
 	}
 }
 
+void fade_to_red() {
+	unsigned char palettes[2][16];
+	char phase = 0;
+	
+	memcpy(palettes[0], test_pal, 16);
+	memcpy(palettes[1], monster_full_palette_bin, 16);
+
+	while (phase < 2) {
+		char colorsComplete = 0;
+		
+		for (int i = 0; i != 2; i++) {
+			for (int j = 0; j != 16; j++) {
+				if (phase == 0) {
+					unsigned char red = palettes[i][j] & 0x03;
+					red++;
+					if (red > 0x03) {
+						red = 0x03;
+						colorsComplete++;
+					}
+					
+					palettes[i][j] = palettes[i][j] & 0x3C | red;
+				} else {
+					unsigned char red = palettes[i][j] & 0x03;
+					unsigned char green = (palettes[i][j] & 0x0C) >> 2;
+					unsigned char blue = (palettes[i][j] & 0x30) >> 4;
+					
+					if (!green && !blue) {
+						colorsComplete++;						
+					}
+					
+					if (green) green--;
+					if (blue) blue--;
+					
+					palettes[i][j] = red | (green << 2) | (blue << 4);
+				}
+			}
+			
+			SMS_waitForVBlank();	
+			SMS_loadBGPalette(palettes[0]);
+			SMS_loadSpritePalette(palettes[1]);
+		}
+		
+		if (colorsComplete == 32) {
+			phase++;
+		}		
+	}
+	
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
+}
+
 void main() {
 	int walked = -1;
 	int tmr = 0;
@@ -704,9 +755,11 @@ void main() {
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);
-			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
 			
 			draw_mini_map(player.x, player.y);
+			
+			fade_to_red();
 
 			walked = 0;
 		}

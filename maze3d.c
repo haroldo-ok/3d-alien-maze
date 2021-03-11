@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "lib/SMSlib.h"
 #include "data.h"
@@ -710,7 +711,11 @@ void main() {
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
 	SMS_loadTiles(test_til, 256, test_til_size);
+	
 	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
+	SMS_configureTextRenderer(320 - 32);
+	SMS_setNextTileatXY(0, 0);
+	puts("Test!");
 	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);

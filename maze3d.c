@@ -504,8 +504,8 @@ void generate_map() {
 	player.y = 1;
 	player.dir = DIR_SOUTH;
 	
-	monster.x = MAP_WIDTH - 1;
-	monster.y = MAP_HEIGHT - 1;
+	monster.x = MAP_WIDTH - 3;
+	monster.y = MAP_HEIGHT - 3;
 }
 
 void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
@@ -698,8 +698,16 @@ void fade_to_red() {
 	SMS_loadSpritePalette(monster_full_palette_bin);
 }
 
+void display_debug_info() {
+	SMS_setNextTileatXY(1, 17);
+	printf("Player X %d, Y %d    \n", player.x, player.y);
+	SMS_setNextTileatXY(1, 18);
+	printf("Monster X %d, Y %d    ", monster.x, monster.y);
+}
+
 void main() {
 	int walked = -1;
+	int player_moved = 0;
 	int tmr = 0;
 	int sprnum;
 	int joy;
@@ -714,8 +722,6 @@ void main() {
 	
 	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
 	SMS_configureTextRenderer(320 - 32);
-	SMS_setNextTileatXY(0, 0);
-	puts("Test!");
 	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
@@ -733,13 +739,17 @@ void main() {
 	for (;;) {
 		joy = SMS_getKeysStatus();
 
+		player_moved = 0;
 		if (joy & PORT_A_KEY_UP) {
 			walk_dir(&player.x, &player.y, 0, 1, player.dir);
 			walked = 1;
+			player_moved = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
 			walk_dir(&player.x, &player.y, 0, -1, player.dir);
 			walked = 1;
+			player_moved = 1;
 		}
+		
 		if (joy & PORT_A_KEY_LEFT) {
 			player.dir = (player.dir - 1) & 0x03;
 			walked = 1;
@@ -748,8 +758,11 @@ void main() {
 			walked = 1;
 		}
 		
-		if (walked) {
+		if (player_moved) {
 			move_monster();
+			if (monster.x == player.x && monster.y == player.y) {
+				fade_to_red();
+			}
 		}
 
 		SMS_initSprites();
@@ -763,6 +776,8 @@ void main() {
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
+			
+			display_debug_info();
 			
 			draw_mini_map(player.x, player.y);
 			

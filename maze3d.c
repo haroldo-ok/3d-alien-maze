@@ -503,8 +503,8 @@ void generate_map() {
 	player.y = 1;
 	player.dir = DIR_SOUTH;
 	
-	monster.x = 3;
-	monster.y = 1;
+	monster.x = MAP_WIDTH - 1;
+	monster.y = MAP_HEIGHT - 1;
 }
 
 void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
@@ -710,6 +710,8 @@ void main() {
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
 	SMS_loadTiles(test_til, 256, test_til_size);
+	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
+	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
@@ -759,8 +761,6 @@ void main() {
 			
 			draw_mini_map(player.x, player.y);
 			
-			fade_to_red();
-
 			walked = 0;
 		}
 

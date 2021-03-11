@@ -694,8 +694,10 @@ void fade_to_red() {
 		}		
 	}
 	
+	/*
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
+	*/
 }
 
 void display_debug_info() {
@@ -762,6 +764,20 @@ void main() {
 			move_monster();
 			if (monster.x == player.x && monster.y == player.y) {
 				fade_to_red();
+				
+				SMS_initSprites();
+				SMS_finalizeSprites();				
+				SMS_copySpritestoSAT();
+
+				SMS_loadPSGaidencompressedTiles(defeat_tiles_psgcompr, 0);
+				SMS_loadTileMap(0, 0, defeat_tilemap_bin, defeat_tilemap_bin_size);
+				SMS_loadBGPalette(defeat_palette_bin);
+				
+				while(1) {
+					SMS_waitForVBlank();
+					SMS_setBGScrollX(rand() & 0x07);
+					SMS_setBGScrollY(rand() & 0x07);
+				}
 			}
 		}
 

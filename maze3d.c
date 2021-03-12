@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "lib/SMSlib.h"
 #include "data.h"
@@ -503,8 +504,8 @@ void generate_map() {
 	player.y = 1;
 	player.dir = DIR_SOUTH;
 	
-	monster.x = 3;
-	monster.y = 1;
+	monster.x = MAP_WIDTH - 3;
+	monster.y = MAP_HEIGHT - 3;
 }
 
 void draw_meta_sprite(int x, int y, int w, int h, unsigned char tile) {
@@ -646,8 +647,87 @@ move_monster() {
 	}
 }
 
+void fade_to_red() {
+	unsigned char palettes[2][16];
+	char phase = 0;
+	
+	memcpy(palettes[0], test_pal, 16);
+	memcpy(palettes[1], monster_full_palette_bin, 16);
+
+	while (phase < 2) {
+		char colorsComplete = 0;
+		
+		for (int i = 0; i != 2; i++) {
+			for (int j = 0; j != 16; j++) {
+				if (phase == 0) {
+					unsigned char red = palettes[i][j] & 0x03;
+					red++;
+					if (red > 0x03) {
+						red = 0x03;
+						colorsComplete++;
+					}
+					
+					palettes[i][j] = palettes[i][j] & 0x3C | red;
+				} else {
+					unsigned char red = palettes[i][j] & 0x03;
+					unsigned char green = (palettes[i][j] & 0x0C) >> 2;
+					unsigned char blue = (palettes[i][j] & 0x30) >> 4;
+					
+					if (!green && !blue) {
+						colorsComplete++;						
+					}
+					
+					if (green) green--;
+					if (blue) blue--;
+					
+					palettes[i][j] = red | (green << 2) | (blue << 4);
+				}
+			}
+			
+			SMS_waitForVBlank();	
+			SMS_loadBGPalette(palettes[0]);
+			SMS_loadSpritePalette(palettes[1]);
+		}
+		
+		if (colorsComplete == 32) {
+			phase++;
+		}		
+	}
+	
+	/*
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
+	*/
+}
+
+void display_debug_info() {
+	SMS_setNextTileatXY(1, 17);
+	printf("Player X %d, Y %d    \n", player.x, player.y);
+	SMS_setNextTileatXY(1, 18);
+	printf("Monster X %d, Y %d    ", monster.x, monster.y);
+}
+
+void display_death_sequence() {
+	fade_to_red();
+	
+	SMS_initSprites();
+	SMS_finalizeSprites();				
+	SMS_copySpritestoSAT();
+
+	SMS_loadPSGaidencompressedTiles(defeat_tiles_psgcompr, 0);
+	SMS_loadTileMap(0, 0, defeat_tilemap_bin, defeat_tilemap_bin_size);
+	SMS_loadBGPalette(defeat_palette_bin);
+	
+	while(1) {
+		SMS_waitForVBlank();
+		SMS_setBGScrollX(rand() & 0x07);
+		SMS_setBGScrollY(rand() & 0x07);
+	}
+}
+
 void main() {
 	int walked = -1;
+	int player_moved = 0;
 	int tmr = 0;
 	int sprnum;
 	int joy;
@@ -659,6 +739,10 @@ void main() {
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
 	SMS_loadTiles(test_til, 256, test_til_size);
+	
+	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
+	SMS_configureTextRenderer(320 - 32);
+	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
@@ -675,13 +759,17 @@ void main() {
 	for (;;) {
 		joy = SMS_getKeysStatus();
 
+		player_moved = 0;
 		if (joy & PORT_A_KEY_UP) {
 			walk_dir(&player.x, &player.y, 0, 1, player.dir);
 			walked = 1;
+			player_moved = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
 			walk_dir(&player.x, &player.y, 0, -1, player.dir);
 			walked = 1;
+			player_moved = 1;
 		}
+		
 		if (joy & PORT_A_KEY_LEFT) {
 			player.dir = (player.dir - 1) & 0x03;
 			walked = 1;
@@ -690,8 +778,11 @@ void main() {
 			walked = 1;
 		}
 		
-		if (walked) {
+		if (player_moved) {
 			move_monster();
+			if (monster.x == player.x && monster.y == player.y) {
+				display_death_sequence();
+			}
 		}
 
 		SMS_initSprites();
@@ -704,10 +795,12 @@ void main() {
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir, bkg);
-			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
+			
+			display_debug_info();
 			
 			draw_mini_map(player.x, player.y);
-
+			
 			walked = 0;
 		}
 

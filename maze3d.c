@@ -41,8 +41,14 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
-// The heartbeat sound effect takes 0,646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
+#define GAMESTATE_PLAY (1)
+#define GAMESTATE_DEATH (2)
+#define GAMESTATE_ESCAPE (3)
+
+// The heartbeat sound effect takes 0.646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
 #define HEARTBEAT_SFX_FRAMES (38)
+// The death sound effect takes 2.045s; that's about 122 frames
+#define DEATH_SFX_FRAMES (122)
 
 #define BKG_PALETTE 0x100
 
@@ -67,6 +73,7 @@ unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 struct player {
 	int x, y;
 	int dir;
+	int level;
 } player;
 
 struct monster {
@@ -169,7 +176,7 @@ unsigned char get_map_r(int x, int y, int rx, int ry, int dir) {
 	return get_map(rx, ry);
 }
 
-void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensive code cleanup. There's too much replicated code below.  =|
+void draw_view(int x, int y, int dir) { // TODO: Some extensive code cleanup. There's too much replicated code below.  =|
 	int i, j;
 	int ofs, h;
 	unsigned int *top, *p, *p2;
@@ -335,6 +342,32 @@ void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensi
 				found = 1;
 			}
 		}
+	}
+}
+
+void draw_status_panel() {
+	SMS_setNextTileatXY(1, 14);
+	printf("Level %d     ", player.level);
+	
+	SMS_setNextTileatXY(13, 14);
+	switch (player.dir) {
+		
+	case DIR_NORTH:
+		puts("North");
+		break;
+	
+	case DIR_EAST:
+		puts("East ");
+		break;
+		
+	case DIR_SOUTH:
+		puts("South");
+		break;
+
+	case DIR_WEST:
+		puts("West ");
+		break;
+	
 	}
 }
 
@@ -583,7 +616,7 @@ void draw_monster_size(char size) {
 	}
 }
 
-draw_monster() {
+void draw_monster() {
 	// Check player's line of sight to verify if it can see the monster
 	for (int dist = 1; dist < 4; dist++) {
 		int x = 0;
@@ -606,7 +639,17 @@ draw_monster() {
 	}
 }
 
-move_monster() {
+void draw_monster_sprites() {
+	SMS_initSprites();
+	draw_monster();
+	SMS_finalizeSprites();
+	
+	SMS_waitForVBlank();
+	SMS_copySpritestoSAT();
+	SMS_loadSpritePalette(monster.palette);
+}
+
+void move_monster() {
 	// Move at 66% of player's speed.
 	monster.move_ctl += 256 / 3;
 	if (monster.move_ctl < 256 * 2 / 3) {	
@@ -657,6 +700,19 @@ move_monster() {
 			monster.y = ty;
 		}
 	}
+}
+
+void clear_tilemap() {
+	SMS_setNextTileatXY(0, 0);
+	for (int i = 32 * 28; i; i--) {
+		SMS_setTile(0);
+	}
+}
+
+void clear_sprites() {
+	SMS_initSprites();	
+	SMS_finalizeSprites();
+	SMS_copySpritestoSAT();
 }
 
 void fade_to_red() {
@@ -725,18 +781,50 @@ void display_death_sequence() {
 	
 	fade_to_red();
 	
-	SMS_initSprites();
-	SMS_finalizeSprites();				
-	SMS_copySpritestoSAT();
+	clear_sprites();
 
 	SMS_loadPSGaidencompressedTiles(defeat_tiles_psgcompr, 0);
 	SMS_loadTileMap(0, 0, defeat_tilemap_bin, defeat_tilemap_bin_size);
 	SMS_loadBGPalette(defeat_palette_bin);
 	
-	while(1) {
+	for (int i = DEATH_SFX_FRAMES; i; i--) {
 		SMS_waitForVBlank();
 		SMS_setBGScrollX(rand() & 0x07);
 		SMS_setBGScrollY(rand() & 0x07);
+	}
+
+	SMS_setBGScrollX(0);
+	SMS_setBGScrollY(0);
+}
+
+void draw_escape_sequence_screen() {
+	SMS_waitForVBlank();	
+	draw_monster_sprites();
+	draw_view(player.x, player.y, player.dir);
+	set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+	
+	for (int i = 2; i; i--) {
+		SMS_waitForVBlank();
+		draw_monster_sprites();
+	}
+}
+
+void display_escape_sequence() {
+	SMS_setNextTileatXY(13, 14);
+	puts("You escaped!!");
+
+	draw_escape_sequence_screen();
+
+	// Turn around
+	for (int i = 2; i; i--) {
+		player.dir = (player.dir + 1) & 0x03;
+		draw_escape_sequence_screen();		
+	}
+	
+	// Run backwards for a bit
+	for (int i = 3; i; i--) {
+		walk_dir(&player.x, &player.y, 0, -1, player.dir);
+		draw_escape_sequence_screen();		
 	}
 }
 
@@ -777,33 +865,50 @@ void set_heartbeat_interval(int interval) {
 	SMS_enableLineInterrupt();
 }
 
-void main() {
+void load_standard_palettes() {
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
+	SMS_setSpritePaletteColor(0, 0);
+}
+
+void load_tile_zero() {
+	SMS_load1bppTiles(font_1bpp, 0, 8, 0, 1);
+}
+
+void configure_text() {
+	load_tile_zero();
+	SMS_load1bppTiles(font_1bpp, 352, font_1bpp_size, 0, 1);
+	SMS_configureTextRenderer(352 - 32);
+}
+
+char gameplay_loop() {
 	int walked = -1;
 	int player_moved = 0;
 	int tmr = 0;
 	int sprnum;
 	int joy;
+	char state = 0;
 
-	SMS_useFirstHalfTilesforSprites(1);
-	SMS_setSpriteMode (SPRITEMODE_TALL);
-	
-	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(monster_full_palette_bin);
+	SMS_waitForVBlank();
+	SMS_displayOff();
 
+	load_standard_palettes();
+
+	clear_sprites();
+	clear_tilemap();
+
+	load_tile_zero();
 	SMS_loadTiles(test_til, 256, test_til_size);
-	
-	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
-	SMS_configureTextRenderer(320 - 32);
+
+	configure_text();
 	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
+	
+	SMS_setNextTileatXY(4, 12);
+	printf("Generating level %d...", player.level);
 		
-	SMS_initSprites();
-	draw_monster_size(SIZE_FULL);
-	SMS_finalizeSprites();
-	SMS_copySpritestoSAT();
-
 	SMS_displayOn();
 
 	heartbeat.active = 1;
@@ -815,7 +920,7 @@ void main() {
 
 	generate_map();
 
-	for (;;) {
+	while (!state) {
 		joy = SMS_getKeysStatus();
 
 		player_moved = 0;
@@ -840,26 +945,23 @@ void main() {
 		if (player_moved) {
 			move_monster();
 			if (monster.x == player.x && monster.y == player.y) {
-				display_death_sequence();
+				state = GAMESTATE_DEATH;
+			} else if (player.x == (MAP_WIDTH - 1) || player.y == (MAP_WIDTH - 1)) {
+				state = GAMESTATE_ESCAPE;
 			}
 		}
 		
 		set_heartbeat_interval(((abs(monster.x - player.x) + abs(monster.y - player.y) - 1) << 1));
 
-		SMS_initSprites();
-		draw_monster();
-		SMS_finalizeSprites();
-		
-		SMS_waitForVBlank();
-		SMS_copySpritestoSAT();
-		SMS_loadSpritePalette(monster.palette);
+		draw_monster_sprites();
 
 		if (walked) {
-			draw_view(player.x, player.y, player.dir, bkg);
+			draw_view(player.x, player.y, player.dir);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
-			
+
+			draw_status_panel();
 			display_debug_info();
-			
+		
 			draw_mini_map(player.x, player.y);
 			
 			walked = 0;
@@ -867,7 +969,41 @@ void main() {
 
 		sprnum = 0;
 
+		rand();
 		tmr++;
+	}
+
+	return state;
+}
+
+void main() {
+	char state = GAMESTATE_PLAY;
+	
+	SMS_useFirstHalfTilesforSprites(1);
+	SMS_setSpriteMode (SPRITEMODE_TALL);
+	
+	player.level = 1;
+
+	while (1) {			
+		switch (state) {
+			
+		case GAMESTATE_PLAY:
+			state = gameplay_loop();
+			break;
+			
+		case GAMESTATE_DEATH:
+			display_death_sequence();			
+			state = GAMESTATE_PLAY;
+			break;
+			
+		case GAMESTATE_ESCAPE:
+			display_escape_sequence();
+		
+			player.level++;
+			state = GAMESTATE_PLAY;
+			break;
+		
+		}
 	}
 }
 

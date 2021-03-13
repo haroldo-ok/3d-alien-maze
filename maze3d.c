@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "lib/SMSlib.h"
+#include "lib/PSGlib.h"
 #include "data.h"
 
 /**
@@ -725,6 +726,10 @@ void display_death_sequence() {
 	}
 }
 
+void interrupt_handler() {
+	PSGFrame();
+}
+
 void main() {
 	int walked = -1;
 	int player_moved = 0;
@@ -752,7 +757,12 @@ void main() {
 	SMS_finalizeSprites();
 	SMS_copySpritestoSAT();
 
-	SMS_displayOn();	
+	SMS_displayOn();
+	
+	PSGPlay(heartbeat_psg);
+	SMS_setLineInterruptHandler(&interrupt_handler);
+	SMS_setLineCounter(192);
+	SMS_enableLineInterrupt();
 
 	generate_map();
 

@@ -175,7 +175,7 @@ unsigned char get_map_r(int x, int y, int rx, int ry, int dir) {
 	return get_map(rx, ry);
 }
 
-void draw_view(int x, int y, int dir, unsigned int *bkg) { // TODO: Some extensive code cleanup. There's too much replicated code below.  =|
+void draw_view(int x, int y, int dir) { // TODO: Some extensive code cleanup. There's too much replicated code below.  =|
 	int i, j;
 	int ofs, h;
 	unsigned int *top, *p, *p2;
@@ -893,7 +893,7 @@ char gameplay_loop() {
 		SMS_loadSpritePalette(monster.palette);
 
 		if (walked) {
-			draw_view(player.x, player.y, player.dir, bkg);
+			draw_view(player.x, player.y, player.dir);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
 			
 			display_debug_info();

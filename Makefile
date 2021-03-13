@@ -3,9 +3,9 @@ OBJS := data.rel maze3d.rel
 
 all: $(PRJNAME).sms
 
-data.c: data/* data/font.1bpp \
+data.c: data/* data/font.1bpp data/minimap_tiles.psgcompr \
 	data/monster_full_tiles.psgcompr data/monster_half_tiles.psgcompr data/monster_quarter_tiles.psgcompr \
-	data/defeat_tiles.psgcompr data/title_tiles.psgcompr
+	data/defeat_tiles.psgcompr data/title_tiles.psgcompr 
 	folder2c data data
 	
 data/monster_full_tiles.psgcompr: data/img/monster_full.png
@@ -22,6 +22,9 @@ data/title_tiles.psgcompr: data/img/title.png
 	
 data/defeat_tiles.psgcompr: data/img/defeat.png
 	BMP2Tile.exe data/img/defeat.png -palsms -fullpalette -savetiles data/defeat_tiles.psgcompr -savetilemap data/defeat_tilemap.bin -savepalette data/defeat_palette.bin
+
+data/minimap_tiles.psgcompr: data/img/minimap.png
+	BMP2Tile.exe data/img/minimap.png -noremovedupes -savetiles data/minimap_tiles.psgcompr
 	
 data/font.1bpp: data/img/font.png
 	BMP2Tile.exe data/img/font.png -noremovedupes -savetiles data/font.1bpp

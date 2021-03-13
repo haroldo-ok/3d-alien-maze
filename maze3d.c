@@ -21,6 +21,7 @@
 
 #define MINIMAP_WIDTH (11)
 #define MINIMAP_HEIGHT (11)
+#define MINIMAP_BASE_TILE (256 + 48)
 
 #define WALL_OFFS_1 (16 * 12)
 #define WALL_OFFS_2 (WALL_OFFS_1 + 8 * 8)
@@ -378,17 +379,25 @@ void draw_status_panel() {
 }
 
 void draw_mini_map(int x, int y) {
-	int min_x = x - (MINIMAP_WIDTH >> 1);
-	int min_y = y - (MINIMAP_HEIGHT >> 1);
+	#define MINIMAP_LEFT (32 - MINIMAP_WIDTH - 1)
+	#define MINIMAP_TOP (14)
+	#define MINIMAP_MIDDLE_X (MINIMAP_WIDTH >> 1)
+	#define MINIMAP_MIDDLE_Y (MINIMAP_HEIGHT >> 1)
+	
+	int min_x = x - MINIMAP_MIDDLE_X;
+	int min_y = y - MINIMAP_MIDDLE_Y;
 	unsigned int buffer[MINIMAP_WIDTH];
 	
 	for (int i = 0; i != MINIMAP_HEIGHT; i++) {
 		for (int j = 0; j != MINIMAP_WIDTH; j++) {
-			buffer[j] = get_map(min_x + j, min_y + i) ? 266 : 256;
+			buffer[j] = get_map(min_x + j, min_y + i) ? (MINIMAP_BASE_TILE + 4) : 256;
 		}
 
-		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 14, MINIMAP_WIDTH, 1);
+		set_bkg_map(buffer, MINIMAP_LEFT, i + MINIMAP_TOP, MINIMAP_WIDTH, 1);
 	}
+	
+	SMS_setNextTileatXY(MINIMAP_LEFT + MINIMAP_MIDDLE_X, MINIMAP_TOP + MINIMAP_MIDDLE_Y);
+	SMS_setTile(MINIMAP_BASE_TILE + player.dir);
 }
 
 void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
@@ -767,11 +776,6 @@ void fade_to_red() {
 			phase++;
 		}		
 	}
-	
-	/*
-	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(monster_full_palette_bin);
-	*/
 }
 
 void display_debug_info() {
@@ -873,6 +877,9 @@ void display_title_screen() {
 	SMS_waitForVBlank();
 	SMS_displayOff();
 	
+	clear_sprites();
+	clear_tilemap();
+	
 	SMS_loadPSGaidencompressedTiles(title_tiles_psgcompr, 0);
 	SMS_loadTileMap(0, 0, title_tilemap_bin, title_tilemap_bin_size);
 	SMS_loadBGPalette(title_palette_bin);
@@ -963,6 +970,7 @@ char gameplay_loop() {
 
 	load_tile_zero();
 	SMS_loadTiles(test_til, 256, test_til_size);
+	SMS_loadPSGaidencompressedTiles(minimap_tiles_psgcompr, MINIMAP_BASE_TILE);
 
 	configure_text();
 	
@@ -993,9 +1001,11 @@ char gameplay_loop() {
 			walked = 1;
 			player_moved = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
-			walk_dir(&player.x, &player.y, 0, -1, player.dir);
-			walked = 1;
-			player_moved = 1;
+			#ifdef CAN_WALK_BACKWARDS
+				walk_dir(&player.x, &player.y, 0, -1, player.dir);
+				walked = 1;
+				player_moved = 1;
+			#endif
 		}
 		
 		if (joy & PORT_A_KEY_LEFT) {

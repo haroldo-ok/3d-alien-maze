@@ -73,6 +73,7 @@ unsigned int bkg[VIEW_WIDTH*VIEW_HEIGHT];
 struct player {
 	int x, y;
 	int dir;
+	int level;
 } player;
 
 struct monster {
@@ -341,6 +342,32 @@ void draw_view(int x, int y, int dir) { // TODO: Some extensive code cleanup. Th
 				found = 1;
 			}
 		}
+	}
+}
+
+void draw_status_panel() {
+	SMS_setNextTileatXY(1, 14);
+	printf("Level %d     ", player.level);
+	
+	SMS_setNextTileatXY(13, 14);
+	switch (player.dir) {
+		
+	case DIR_NORTH:
+		puts("North");
+		break;
+	
+	case DIR_EAST:
+		puts("East ");
+		break;
+		
+	case DIR_SOUTH:
+		puts("South");
+		break;
+
+	case DIR_WEST:
+		puts("West ");
+		break;
+	
 	}
 }
 
@@ -896,9 +923,10 @@ char gameplay_loop() {
 		if (walked) {
 			draw_view(player.x, player.y, player.dir);
 			set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);			
-			
+
+			draw_status_panel();
 			display_debug_info();
-			
+		
 			draw_mini_map(player.x, player.y);
 			
 			walked = 0;
@@ -906,6 +934,7 @@ char gameplay_loop() {
 
 		sprnum = 0;
 
+		rand();
 		tmr++;
 	}
 
@@ -917,8 +946,10 @@ void main() {
 	
 	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
+	
+	player.level = 1;
 
-	while (1) {
+	while (1) {			
 		switch (state) {
 			
 		case GAMESTATE_PLAY:
@@ -931,6 +962,7 @@ void main() {
 			break;
 			
 		case GAMESTATE_ESCAPE:
+			player.level++;
 			state = GAMESTATE_PLAY;
 			break;
 		

@@ -781,16 +781,13 @@ void set_heartbeat_interval(int interval) {
 	SMS_enableLineInterrupt();
 }
 
-void main() {
+void gameplay_loop() {
 	int walked = -1;
 	int player_moved = 0;
 	int tmr = 0;
 	int sprnum;
 	int joy;
 
-	SMS_useFirstHalfTilesforSprites(1);
-	SMS_setSpriteMode (SPRITEMODE_TALL);
-	
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
@@ -873,6 +870,14 @@ void main() {
 
 		tmr++;
 	}
+
+}
+
+void main() {
+	SMS_useFirstHalfTilesforSprites(1);
+	SMS_setSpriteMode (SPRITEMODE_TALL);
+
+	gameplay_loop();
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'

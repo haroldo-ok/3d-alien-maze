@@ -41,8 +41,10 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
-// The heartbeat sound effect takes 0,646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
+// The heartbeat sound effect takes 0.646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
 #define HEARTBEAT_SFX_FRAMES (38)
+// The death sound effect takes 2.045s; that's about 122 frames
+#define DEATH_SFX_FRAMES (122)
 
 #define BKG_PALETTE 0x100
 
@@ -733,11 +735,13 @@ void display_death_sequence() {
 	SMS_loadTileMap(0, 0, defeat_tilemap_bin, defeat_tilemap_bin_size);
 	SMS_loadBGPalette(defeat_palette_bin);
 	
-	while(1) {
+	for (int i = DEATH_SFX_FRAMES; i; i--) {
 		SMS_waitForVBlank();
 		SMS_setBGScrollX(rand() & 0x07);
 		SMS_setBGScrollY(rand() & 0x07);
 	}
+	
+	while (1);
 }
 
 void interrupt_handler() {

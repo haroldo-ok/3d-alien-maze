@@ -803,14 +803,13 @@ void draw_escape_sequence_screen() {
 	draw_view(player.x, player.y, player.dir);
 	set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
 	
-	for (int i = 30; i; i--) {
+	for (int i = 2; i; i--) {
 		SMS_waitForVBlank();
 		draw_monster_sprites();
 	}
 }
 
 void display_escape_sequence() {
-	/*
 	SMS_setNextTileatXY(13, 14);
 	puts("You escaped!!");
 
@@ -827,7 +826,6 @@ void display_escape_sequence() {
 		walk_dir(&player.x, &player.y, 0, -1, player.dir);
 		draw_escape_sequence_screen();		
 	}
-	*/
 }
 
 void interrupt_handler() {
@@ -909,7 +907,7 @@ char gameplay_loop() {
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
 	
 	SMS_setNextTileatXY(4, 12);
-	puts("Generating maze...");
+	printf("Generating level %d...", player.level);
 		
 	SMS_displayOn();
 

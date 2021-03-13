@@ -41,9 +41,10 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
-#define GAMESTATE_PLAY (1)
-#define GAMESTATE_DEATH (2)
-#define GAMESTATE_ESCAPE (3)
+#define GAMESTATE_TITLE (1)
+#define GAMESTATE_PLAY (2)
+#define GAMESTATE_DEATH (3)
+#define GAMESTATE_ESCAPE (4)
 
 // The heartbeat sound effect takes 0.646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
 #define HEARTBEAT_SFX_FRAMES (38)
@@ -828,6 +829,34 @@ void display_escape_sequence() {
 	}
 }
 
+void display_title_screen() {
+	int joy = 0;
+	int y = 64;
+	
+	SMS_disableLineInterrupt();
+
+	SMS_waitForVBlank();
+	SMS_displayOff();
+	
+	SMS_loadPSGaidencompressedTiles(title_tiles_psgcompr, 0);
+	SMS_loadTileMap(0, 0, title_tilemap_bin, title_tilemap_bin_size);
+	SMS_loadBGPalette(title_palette_bin);
+	
+	SMS_displayOn();
+	
+	while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2))) {
+		if (y) y -= 2;
+
+		SMS_waitForVBlank();
+		
+		SMS_setBGScrollX(0);
+		SMS_setBGScrollY(y);
+
+		joy = SMS_getKeysStatus();
+		rand();
+	}
+}
+
 void interrupt_handler() {
 	if (heartbeat.active) {
 		if (heartbeat.delay > 0) {
@@ -977,7 +1006,7 @@ char gameplay_loop() {
 }
 
 void main() {
-	char state = GAMESTATE_PLAY;
+	char state = GAMESTATE_TITLE;
 	
 	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
@@ -986,6 +1015,11 @@ void main() {
 
 	while (1) {			
 		switch (state) {
+			
+		case GAMESTATE_TITLE:
+			display_title_screen();
+			state = GAMESTATE_PLAY;
+			break;
 			
 		case GAMESTATE_PLAY:
 			state = gameplay_loop();

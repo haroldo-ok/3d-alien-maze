@@ -3,8 +3,8 @@ OBJS := data.rel maze3d.rel
 
 all: $(PRJNAME).sms
 
-data.c: data/* data/monster_full_tiles.psgcompr data/monster_half_tiles.psgcompr data/monster_quarter_tiles.psgcompr data/defeat.psgcompr data/font.1bpp \
-	data/sfx/death.vgm data/sfx/heartbeat.vgm
+data.c: data/* data/monster_full_tiles.psgcompr data/monster_half_tiles.psgcompr data/monster_quarter_tiles.psgcompr data/defeat_tiles.psgcompr \
+	data/font.1bpp
 	folder2c data data
 	
 data/monster_full_tiles.psgcompr: data/img/monster_full.png
@@ -16,7 +16,7 @@ data/monster_half_tiles.psgcompr: data/img/monster_half.png
 data/monster_quarter_tiles.psgcompr: data/img/monster_quarter.png
 	BMP2Tile.exe data/img/monster_quarter.png -noremovedupes -8x16 -palsms -fullpalette -savetiles data/monster_quarter_tiles.psgcompr
 
-data/defeat.psgcompr: data/img/defeat.png
+data/defeat_tiles.psgcompr: data/img/defeat.png
 	BMP2Tile.exe data/img/defeat.png -palsms -fullpalette -savetiles data/defeat_tiles.psgcompr -savetilemap data/defeat_tilemap.bin -savepalette data/defeat_palette.bin
 	
 data/font.1bpp: data/img/font.png

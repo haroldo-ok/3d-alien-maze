@@ -3,7 +3,8 @@ OBJS := data.rel maze3d.rel
 
 all: $(PRJNAME).sms
 
-data.c: data/* data/monster_full_tiles.psgcompr data/monster_half_tiles.psgcompr data/monster_quarter_tiles.psgcompr data/defeat.psgcompr data/font.1bpp
+data.c: data/* data/monster_full_tiles.psgcompr data/monster_half_tiles.psgcompr data/monster_quarter_tiles.psgcompr data/defeat.psgcompr data/font.1bpp \
+	data/sfx/death.vgm data/sfx/heartbeat.vgm
 	folder2c data data
 	
 data/monster_full_tiles.psgcompr: data/img/monster_full.png
@@ -20,6 +21,9 @@ data/defeat.psgcompr: data/img/defeat.png
 	
 data/font.1bpp: data/img/font.png
 	BMP2Tile.exe data/img/font.png -noremovedupes -savetiles data/font.1bpp
+	
+%.vgm: %.wav
+	psgtalk -r 512 -u 1 -m vgm $<
 
 %.rel : %.c
 	sdcc -c -mz80 --peep-file lib/peep-rules.txt $<

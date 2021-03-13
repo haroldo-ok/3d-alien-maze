@@ -41,6 +41,10 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+#define GAMESTATE_PLAY (1)
+#define GAMESTATE_DEATH (2)
+#define GAMESTATE_ESCAPE (3)
+
 // The heartbeat sound effect takes 0.646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
 #define HEARTBEAT_SFX_FRAMES (38)
 // The death sound effect takes 2.045s; that's about 122 frames
@@ -740,8 +744,6 @@ void display_death_sequence() {
 		SMS_setBGScrollX(rand() & 0x07);
 		SMS_setBGScrollY(rand() & 0x07);
 	}
-	
-	while (1);
 }
 
 void interrupt_handler() {
@@ -781,12 +783,13 @@ void set_heartbeat_interval(int interval) {
 	SMS_enableLineInterrupt();
 }
 
-void gameplay_loop() {
+char gameplay_loop() {
 	int walked = -1;
 	int player_moved = 0;
 	int tmr = 0;
 	int sprnum;
 	int joy;
+	char state = 0;
 
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
@@ -816,7 +819,7 @@ void gameplay_loop() {
 
 	generate_map();
 
-	for (;;) {
+	while (!state) {
 		joy = SMS_getKeysStatus();
 
 		player_moved = 0;
@@ -841,7 +844,7 @@ void gameplay_loop() {
 		if (player_moved) {
 			move_monster();
 			if (monster.x == player.x && monster.y == player.y) {
-				display_death_sequence();
+				state = GAMESTATE_DEATH;
 			}
 		}
 		
@@ -871,13 +874,27 @@ void gameplay_loop() {
 		tmr++;
 	}
 
+	return state;
 }
 
 void main() {
+	char state = GAMESTATE_PLAY;
+	
 	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
 
-	gameplay_loop();
+	while (1) {
+		switch (state) {
+		case GAMESTATE_PLAY:
+			state = gameplay_loop();
+			break;
+			
+		case GAMESTATE_DEATH:
+			display_death_sequence();			
+			state = GAMESTATE_PLAY;
+			break;
+		}
+	}
 }
 
 SMS_EMBED_SEGA_ROM_HEADER(9999,0); // code 9999 hopefully free, here this means 'homebrew'

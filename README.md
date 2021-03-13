@@ -1,5 +1,9 @@
 # 3D Alien maze
 
+## Known bugs
+
+* Very rarely, the game will still produce unwinnable mazes.
+
 ## Tools/resources used
 
 * [Sverx's devkitSMS][https://github.com/sverx/devkitSMS] for access to the Sega Master System hardware;

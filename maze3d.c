@@ -756,6 +756,12 @@ void interrupt_handler() {
 	}
 }
 
+void set_heartbeat_interval(int interval) {
+	SMS_disableLineInterrupt();
+	heartbeat.interval = interval;
+	SMS_enableLineInterrupt();
+}
+
 void main() {
 	int walked = -1;
 	int player_moved = 0;
@@ -821,6 +827,8 @@ void main() {
 				display_death_sequence();
 			}
 		}
+		
+		set_heartbeat_interval(((abs(monster.x - player.x) + abs(monster.y - player.y) - 1) << 1));
 
 		SMS_initSprites();
 		draw_monster();

@@ -2,7 +2,8 @@
 
 ## Known bugs
 
-* Very rarely, the game will still produce unwinnable mazes.
+* Very rarely, the game will still produce unwinnable mazes;
+* The build is failing to generate the standard SEGA ROM headers, meaning it may not run on real hardware.
 
 ## Tools/resources used
 

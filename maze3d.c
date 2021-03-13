@@ -639,6 +639,16 @@ void draw_monster() {
 	}
 }
 
+void draw_monster_sprites() {
+	SMS_initSprites();
+	draw_monster();
+	SMS_finalizeSprites();
+	
+	SMS_waitForVBlank();
+	SMS_copySpritestoSAT();
+	SMS_loadSpritePalette(monster.palette);
+}
+
 void move_monster() {
 	// Move at 66% of player's speed.
 	monster.move_ctl += 256 / 3;
@@ -787,6 +797,39 @@ void display_death_sequence() {
 	SMS_setBGScrollY(0);
 }
 
+void draw_escape_sequence_screen() {
+	SMS_waitForVBlank();	
+	draw_monster_sprites();
+	draw_view(player.x, player.y, player.dir);
+	set_bkg_map(bkg, 0, 1, VIEW_WIDTH, VIEW_HEIGHT);
+	
+	for (int i = 30; i; i--) {
+		SMS_waitForVBlank();
+		draw_monster_sprites();
+	}
+}
+
+void display_escape_sequence() {
+	/*
+	SMS_setNextTileatXY(13, 14);
+	puts("You escaped!!");
+
+	draw_escape_sequence_screen();
+
+	// Turn around
+	for (int i = 2; i; i--) {
+		player.dir = (player.dir + 1) & 0x03;
+		draw_escape_sequence_screen();		
+	}
+	
+	// Run backwards for a bit
+	for (int i = 3; i; i--) {
+		walk_dir(&player.x, &player.y, 0, -1, player.dir);
+		draw_escape_sequence_screen();		
+	}
+	*/
+}
+
 void interrupt_handler() {
 	if (heartbeat.active) {
 		if (heartbeat.delay > 0) {
@@ -912,13 +955,7 @@ char gameplay_loop() {
 		
 		set_heartbeat_interval(((abs(monster.x - player.x) + abs(monster.y - player.y) - 1) << 1));
 
-		SMS_initSprites();
-		draw_monster();
-		SMS_finalizeSprites();
-		
-		SMS_waitForVBlank();
-		SMS_copySpritestoSAT();
-		SMS_loadSpritePalette(monster.palette);
+		draw_monster_sprites();
 
 		if (walked) {
 			draw_view(player.x, player.y, player.dir);
@@ -962,6 +999,8 @@ void main() {
 			break;
 			
 		case GAMESTATE_ESCAPE:
+			display_escape_sequence();
+		
 			player.level++;
 			state = GAMESTATE_PLAY;
 			break;

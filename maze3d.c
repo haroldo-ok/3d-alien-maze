@@ -19,8 +19,8 @@
 #define VIEW_WIDTH (32)
 #define VIEW_HEIGHT (12)
 
-#define MINIMAP_WIDTH (7)
-#define MINIMAP_HEIGHT (7)
+#define MINIMAP_WIDTH (11)
+#define MINIMAP_HEIGHT (11)
 
 #define WALL_OFFS_1 (16 * 12)
 #define WALL_OFFS_2 (WALL_OFFS_1 + 8 * 8)
@@ -387,7 +387,7 @@ void draw_mini_map(int x, int y) {
 			buffer[j] = get_map(min_x + j, min_y + i) ? 266 : 256;
 		}
 
-		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 16, MINIMAP_WIDTH, 1);
+		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 14, MINIMAP_WIDTH, 1);
 	}
 }
 

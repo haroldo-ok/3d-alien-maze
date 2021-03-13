@@ -56,6 +56,7 @@
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
+void set_heartbeat_active(char active);
 
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
@@ -79,6 +80,7 @@ struct monster {
 } monster;
 
 struct heartbeat {
+	char active;
 	int delay;
 	char frame;
 	int interval;
@@ -718,6 +720,9 @@ void display_debug_info() {
 }
 
 void display_death_sequence() {
+	set_heartbeat_active(0);
+	PSGPlayNoRepeat(death_psg);
+	
 	fade_to_red();
 	
 	SMS_initSprites();
@@ -735,25 +740,35 @@ void display_death_sequence() {
 	}
 }
 
-void interrupt_handler() {	
-	if (heartbeat.delay > 0) {
-		heartbeat.delay--;
-	} else {
-		heartbeat.frame = HEARTBEAT_SFX_FRAMES;
-		heartbeat.delay = heartbeat.interval + heartbeat.frame;
-		PSGPlayNoRepeat(heartbeat_psg);
-		PSGResume();
-	}
-
-	// PSGPlayNoRepeat is repeating, so this is a workaround.
-	if (heartbeat.frame) {
-		heartbeat.frame--;
-		if (heartbeat.frame) {
-			PSGFrame();
+void interrupt_handler() {
+	if (heartbeat.active) {
+		if (heartbeat.delay > 0) {
+			heartbeat.delay--;
 		} else {
-			PSGStop();
-		}			
+			heartbeat.frame = HEARTBEAT_SFX_FRAMES;
+			heartbeat.delay = heartbeat.interval + heartbeat.frame;
+			PSGPlayNoRepeat(heartbeat_psg);
+			PSGResume();
+		}
+
+		// PSGPlayNoRepeat is repeating, so this is a workaround.
+		if (heartbeat.frame) {
+			heartbeat.frame--;
+			if (heartbeat.frame) {
+				PSGFrame();
+			} else {
+				PSGStop();
+			}			
+		}
+	} else {
+		PSGFrame();
 	}
+}
+
+void set_heartbeat_active(char active) {
+	SMS_disableLineInterrupt();
+	heartbeat.active = active;
+	SMS_enableLineInterrupt();
 }
 
 void set_heartbeat_interval(int interval) {
@@ -790,7 +805,8 @@ void main() {
 	SMS_copySpritestoSAT();
 
 	SMS_displayOn();
-	
+
+	heartbeat.active = 1;
 	heartbeat.delay = 0;
 	heartbeat.interval = 70;
 	SMS_setLineInterruptHandler(&interrupt_handler);

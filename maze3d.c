@@ -665,6 +665,19 @@ void move_monster() {
 	}
 }
 
+void clear_tilemap() {
+	SMS_setNextTileatXY(0, 0);
+	for (int i = 32 * 28; i; i--) {
+		SMS_setTile(0);
+	}
+}
+
+void clear_sprites() {
+	SMS_initSprites();	
+	SMS_finalizeSprites();
+	SMS_copySpritestoSAT();
+}
+
 void fade_to_red() {
 	unsigned char palettes[2][16];
 	char phase = 0;
@@ -731,9 +744,7 @@ void display_death_sequence() {
 	
 	fade_to_red();
 	
-	SMS_initSprites();
-	SMS_finalizeSprites();				
-	SMS_copySpritestoSAT();
+	clear_sprites();
 
 	SMS_loadPSGaidencompressedTiles(defeat_tiles_psgcompr, 0);
 	SMS_loadTileMap(0, 0, defeat_tilemap_bin, defeat_tilemap_bin_size);
@@ -786,13 +797,6 @@ void set_heartbeat_interval(int interval) {
 	SMS_enableLineInterrupt();
 }
 
-void clear_tilemap() {
-	SMS_setNextTileatXY(0, 0);
-	for (int i = 32 * 28; i; i--) {
-		SMS_setTile(0);
-	}
-}
-
 void load_standard_palettes() {
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
@@ -822,10 +826,7 @@ char gameplay_loop() {
 
 	load_standard_palettes();
 
-	SMS_initSprites();
-	SMS_finalizeSprites();
-	SMS_copySpritestoSAT();
-
+	clear_sprites();
 	clear_tilemap();
 
 	load_tile_zero();

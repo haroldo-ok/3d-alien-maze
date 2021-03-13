@@ -796,6 +796,7 @@ void clear_tilemap() {
 void load_standard_palettes() {
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
+	SMS_setSpritePaletteColor(0, 0);
 }
 
 void load_tile_zero() {
@@ -803,6 +804,7 @@ void load_tile_zero() {
 }
 
 void configure_text() {
+	load_tile_zero();
 	SMS_load1bppTiles(font_1bpp, 352, font_1bpp_size, 0, 1);
 	SMS_configureTextRenderer(352 - 32);
 }
@@ -875,6 +877,8 @@ char gameplay_loop() {
 			move_monster();
 			if (monster.x == player.x && monster.y == player.y) {
 				state = GAMESTATE_DEATH;
+			} else if (player.x == (MAP_WIDTH - 1) || player.y == (MAP_WIDTH - 1)) {
+				state = GAMESTATE_ESCAPE;
 			}
 		}
 		
@@ -915,6 +919,7 @@ void main() {
 
 	while (1) {
 		switch (state) {
+			
 		case GAMESTATE_PLAY:
 			state = gameplay_loop();
 			break;
@@ -923,6 +928,11 @@ void main() {
 			display_death_sequence();			
 			state = GAMESTATE_PLAY;
 			break;
+			
+		case GAMESTATE_ESCAPE:
+			state = GAMESTATE_PLAY;
+			break;
+		
 		}
 	}
 }

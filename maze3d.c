@@ -19,8 +19,9 @@
 #define VIEW_WIDTH (32)
 #define VIEW_HEIGHT (12)
 
-#define MINIMAP_WIDTH (7)
-#define MINIMAP_HEIGHT (7)
+#define MINIMAP_WIDTH (11)
+#define MINIMAP_HEIGHT (11)
+#define MINIMAP_BASE_TILE (256 + 48)
 
 #define WALL_OFFS_1 (16 * 12)
 #define WALL_OFFS_2 (WALL_OFFS_1 + 8 * 8)
@@ -41,9 +42,10 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
-#define GAMESTATE_PLAY (1)
-#define GAMESTATE_DEATH (2)
-#define GAMESTATE_ESCAPE (3)
+#define GAMESTATE_TITLE (1)
+#define GAMESTATE_PLAY (2)
+#define GAMESTATE_DEATH (3)
+#define GAMESTATE_ESCAPE (4)
 
 // The heartbeat sound effect takes 0.646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
 #define HEARTBEAT_SFX_FRAMES (38)
@@ -63,6 +65,11 @@
 
 unsigned char get_map(int x, int y);
 void set_heartbeat_active(char active);
+
+void clear_tilemap();
+void clear_sprites();
+void load_standard_palettes();
+void configure_text();
 
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
@@ -372,17 +379,25 @@ void draw_status_panel() {
 }
 
 void draw_mini_map(int x, int y) {
-	int min_x = x - (MINIMAP_WIDTH >> 1);
-	int min_y = y - (MINIMAP_HEIGHT >> 1);
+	#define MINIMAP_LEFT (32 - MINIMAP_WIDTH - 1)
+	#define MINIMAP_TOP (14)
+	#define MINIMAP_MIDDLE_X (MINIMAP_WIDTH >> 1)
+	#define MINIMAP_MIDDLE_Y (MINIMAP_HEIGHT >> 1)
+	
+	int min_x = x - MINIMAP_MIDDLE_X;
+	int min_y = y - MINIMAP_MIDDLE_Y;
 	unsigned int buffer[MINIMAP_WIDTH];
 	
 	for (int i = 0; i != MINIMAP_HEIGHT; i++) {
 		for (int j = 0; j != MINIMAP_WIDTH; j++) {
-			buffer[j] = get_map(min_x + j, min_y + i) ? 266 : 256;
+			buffer[j] = get_map(min_x + j, min_y + i) ? (MINIMAP_BASE_TILE + 4) : 256;
 		}
 
-		set_bkg_map(buffer, 32 - MINIMAP_WIDTH - 1, i + 16, MINIMAP_WIDTH, 1);
+		set_bkg_map(buffer, MINIMAP_LEFT, i + MINIMAP_TOP, MINIMAP_WIDTH, 1);
 	}
+	
+	SMS_setNextTileatXY(MINIMAP_LEFT + MINIMAP_MIDDLE_X, MINIMAP_TOP + MINIMAP_MIDDLE_Y);
+	SMS_setTile(MINIMAP_BASE_TILE + player.dir);
 }
 
 void fade_bkg(unsigned int *bg1, unsigned int *bg2, int fade) {
@@ -761,11 +776,6 @@ void fade_to_red() {
 			phase++;
 		}		
 	}
-	
-	/*
-	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(monster_full_palette_bin);
-	*/
 }
 
 void display_debug_info() {
@@ -797,6 +807,36 @@ void display_death_sequence() {
 	SMS_setBGScrollY(0);
 }
 
+void display_game_over() {
+	SMS_disableLineInterrupt();	
+	SMS_displayOff();
+	
+	SMS_setBGScrollX(0);
+	SMS_setBGScrollY(0);
+
+	clear_tilemap();
+	clear_sprites();
+	load_standard_palettes();
+	configure_text();
+	
+	SMS_setNextTileatXY(11, 12);
+	puts("You Died!!");
+	
+	SMS_setNextTileatXY(6, 14);
+	printf("You reached level %d", player.level);
+
+	SMS_displayOn();
+	
+	for (int y = 64; y >= 0; y -= 2) {		
+		SMS_setBGScrollY(y);
+		SMS_waitForVBlank();
+	}
+	
+	for (int y = 120; y; y--) {		
+		SMS_waitForVBlank();
+	}
+}
+
 void draw_escape_sequence_screen() {
 	SMS_waitForVBlank();	
 	draw_monster_sprites();
@@ -825,6 +865,37 @@ void display_escape_sequence() {
 	for (int i = 3; i; i--) {
 		walk_dir(&player.x, &player.y, 0, -1, player.dir);
 		draw_escape_sequence_screen();		
+	}
+}
+
+void display_title_screen() {
+	int joy = 0;
+	int y = 64;
+	
+	SMS_disableLineInterrupt();
+
+	SMS_waitForVBlank();
+	SMS_displayOff();
+	
+	clear_sprites();
+	clear_tilemap();
+	
+	SMS_loadPSGaidencompressedTiles(title_tiles_psgcompr, 0);
+	SMS_loadTileMap(0, 0, title_tilemap_bin, title_tilemap_bin_size);
+	SMS_loadBGPalette(title_palette_bin);
+	
+	SMS_displayOn();
+	
+	while (!(joy & (PORT_A_KEY_1 | PORT_A_KEY_2))) {
+		if (y) y -= 2;
+
+		SMS_waitForVBlank();
+		
+		SMS_setBGScrollX(0);
+		SMS_setBGScrollY(y);
+
+		joy = SMS_getKeysStatus();
+		rand();
 	}
 }
 
@@ -899,6 +970,7 @@ char gameplay_loop() {
 
 	load_tile_zero();
 	SMS_loadTiles(test_til, 256, test_til_size);
+	SMS_loadPSGaidencompressedTiles(minimap_tiles_psgcompr, MINIMAP_BASE_TILE);
 
 	configure_text();
 	
@@ -929,9 +1001,11 @@ char gameplay_loop() {
 			walked = 1;
 			player_moved = 1;
 		} else if (joy & PORT_A_KEY_DOWN) {
-			walk_dir(&player.x, &player.y, 0, -1, player.dir);
-			walked = 1;
-			player_moved = 1;
+			#ifdef CAN_WALK_BACKWARDS
+				walk_dir(&player.x, &player.y, 0, -1, player.dir);
+				walked = 1;
+				player_moved = 1;
+			#endif
 		}
 		
 		if (joy & PORT_A_KEY_LEFT) {
@@ -977,15 +1051,19 @@ char gameplay_loop() {
 }
 
 void main() {
-	char state = GAMESTATE_PLAY;
+	char state = GAMESTATE_TITLE;
 	
 	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
 	
-	player.level = 1;
-
 	while (1) {			
 		switch (state) {
+			
+		case GAMESTATE_TITLE:
+			display_title_screen();
+			player.level = 1;
+			state = GAMESTATE_PLAY;
+			break;
 			
 		case GAMESTATE_PLAY:
 			state = gameplay_loop();
@@ -993,7 +1071,8 @@ void main() {
 			
 		case GAMESTATE_DEATH:
 			display_death_sequence();			
-			state = GAMESTATE_PLAY;
+			display_game_over();
+			state = GAMESTATE_TITLE;
 			break;
 			
 		case GAMESTATE_ESCAPE:

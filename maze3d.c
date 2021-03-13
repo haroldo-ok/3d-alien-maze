@@ -744,6 +744,9 @@ void display_death_sequence() {
 		SMS_setBGScrollX(rand() & 0x07);
 		SMS_setBGScrollY(rand() & 0x07);
 	}
+
+	SMS_setBGScrollX(0);
+	SMS_setBGScrollY(0);
 }
 
 void interrupt_handler() {
@@ -783,6 +786,13 @@ void set_heartbeat_interval(int interval) {
 	SMS_enableLineInterrupt();
 }
 
+void clear_tilemap() {
+	SMS_setNextTileatXY(0, 0);
+	for (int i = 32 * 28; i; i--) {
+		SMS_setTile(0);
+	}
+}
+
 char gameplay_loop() {
 	int walked = -1;
 	int player_moved = 0;
@@ -791,9 +801,15 @@ char gameplay_loop() {
 	int joy;
 	char state = 0;
 
+	SMS_waitForVBlank();
+	SMS_displayOff();
+	
 	SMS_loadBGPalette(test_pal);
 	SMS_loadSpritePalette(monster_full_palette_bin);
 
+	clear_tilemap();
+
+	SMS_load1bppTiles(font_1bpp, 0, 8, 0, 1);
 	SMS_loadTiles(test_til, 256, test_til_size);
 	
 	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);

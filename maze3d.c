@@ -589,7 +589,7 @@ void draw_monster_size(char size) {
 	}
 }
 
-draw_monster() {
+void draw_monster() {
 	// Check player's line of sight to verify if it can see the monster
 	for (int dist = 1; dist < 4; dist++) {
 		int x = 0;
@@ -612,7 +612,7 @@ draw_monster() {
 	}
 }
 
-move_monster() {
+void move_monster() {
 	// Move at 66% of player's speed.
 	monster.move_ctl += 256 / 3;
 	if (monster.move_ctl < 256 * 2 / 3) {	
@@ -793,6 +793,20 @@ void clear_tilemap() {
 	}
 }
 
+void load_standard_palettes() {
+	SMS_loadBGPalette(test_pal);
+	SMS_loadSpritePalette(monster_full_palette_bin);
+}
+
+void load_tile_zero() {
+	SMS_load1bppTiles(font_1bpp, 0, 8, 0, 1);
+}
+
+void configure_text() {
+	SMS_load1bppTiles(font_1bpp, 352, font_1bpp_size, 0, 1);
+	SMS_configureTextRenderer(352 - 32);
+}
+
 char gameplay_loop() {
 	int walked = -1;
 	int player_moved = 0;
@@ -803,27 +817,27 @@ char gameplay_loop() {
 
 	SMS_waitForVBlank();
 	SMS_displayOff();
-	
-	SMS_loadBGPalette(test_pal);
-	SMS_loadSpritePalette(monster_full_palette_bin);
+
+	load_standard_palettes();
+
+	SMS_initSprites();
+	SMS_finalizeSprites();
+	SMS_copySpritestoSAT();
 
 	clear_tilemap();
 
-	SMS_load1bppTiles(font_1bpp, 0, 8, 0, 1);
+	load_tile_zero();
 	SMS_loadTiles(test_til, 256, test_til_size);
-	
-	SMS_load1bppTiles(font_1bpp, 320, font_1bpp_size, 0, 1);
-	SMS_configureTextRenderer(320 - 32);
+
+	configure_text();
 	
 	SMS_loadPSGaidencompressedTiles(monster_full_tiles_psgcompr, 2);
 	SMS_loadPSGaidencompressedTiles(monster_half_tiles_psgcompr, 72);
 	SMS_loadPSGaidencompressedTiles(monster_quarter_tiles_psgcompr, 90);
+	
+	SMS_setNextTileatXY(4, 12);
+	puts("Generating maze...");
 		
-	SMS_initSprites();
-	draw_monster_size(SIZE_FULL);
-	SMS_finalizeSprites();
-	SMS_copySpritestoSAT();
-
 	SMS_displayOn();
 
 	heartbeat.active = 1;

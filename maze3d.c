@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "lib/SMSlib.h"
+#include "lib/PSGlib.h"
 #include "data.h"
 
 /**
@@ -40,6 +41,9 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+// The heartbeat sound effect takes 0,646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
+#define HEARTBEAT_SFX_FRAMES (38)
+
 #define BKG_PALETTE 0x100
 
 #define MAP_WIDTH (24)
@@ -52,6 +56,7 @@
 #define set_bkg_map(src, x, y, width, height) SMS_loadTileMapArea(x, y, src, width, height);
 
 unsigned char get_map(int x, int y);
+void set_heartbeat_active(char active);
 
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
@@ -73,6 +78,13 @@ struct monster {
 	unsigned char palette[16];
 	char plt_frame_1, plt_frame_2;
 } monster;
+
+struct heartbeat {
+	char active;
+	int delay;
+	char frame;
+	int interval;
+} heartbeat;
 
 const unsigned char monster_pal_eye_anim[] = {
   0x05, 0x06, 0x0A, 0x0B, 0x0F, 0x0F, 0x1F, 0x1F, 0x2F, 0x3F, 
@@ -708,6 +720,9 @@ void display_debug_info() {
 }
 
 void display_death_sequence() {
+	set_heartbeat_active(0);
+	PSGPlayNoRepeat(death_psg);
+	
 	fade_to_red();
 	
 	SMS_initSprites();
@@ -723,6 +738,43 @@ void display_death_sequence() {
 		SMS_setBGScrollX(rand() & 0x07);
 		SMS_setBGScrollY(rand() & 0x07);
 	}
+}
+
+void interrupt_handler() {
+	if (heartbeat.active) {
+		if (heartbeat.delay > 0) {
+			heartbeat.delay--;
+		} else {
+			heartbeat.frame = HEARTBEAT_SFX_FRAMES;
+			heartbeat.delay = heartbeat.interval + heartbeat.frame;
+			PSGPlayNoRepeat(heartbeat_psg);
+			PSGResume();
+		}
+
+		// PSGPlayNoRepeat is repeating, so this is a workaround.
+		if (heartbeat.frame) {
+			heartbeat.frame--;
+			if (heartbeat.frame) {
+				PSGFrame();
+			} else {
+				PSGStop();
+			}			
+		}
+	} else {
+		PSGFrame();
+	}
+}
+
+void set_heartbeat_active(char active) {
+	SMS_disableLineInterrupt();
+	heartbeat.active = active;
+	SMS_enableLineInterrupt();
+}
+
+void set_heartbeat_interval(int interval) {
+	SMS_disableLineInterrupt();
+	heartbeat.interval = interval;
+	SMS_enableLineInterrupt();
 }
 
 void main() {
@@ -752,7 +804,14 @@ void main() {
 	SMS_finalizeSprites();
 	SMS_copySpritestoSAT();
 
-	SMS_displayOn();	
+	SMS_displayOn();
+
+	heartbeat.active = 1;
+	heartbeat.delay = 0;
+	heartbeat.interval = 70;
+	SMS_setLineInterruptHandler(&interrupt_handler);
+	SMS_setLineCounter(180);
+	SMS_enableLineInterrupt();
 
 	generate_map();
 
@@ -784,6 +843,8 @@ void main() {
 				display_death_sequence();
 			}
 		}
+		
+		set_heartbeat_interval(((abs(monster.x - player.x) + abs(monster.y - player.y) - 1) << 1));
 
 		SMS_initSprites();
 		draw_monster();

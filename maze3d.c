@@ -41,6 +41,9 @@
 #define DIR_SOUTH 2
 #define DIR_WEST 3
 
+// The heartbeat sound effect takes 0,646s; that's about 38 frames. Also, PSGPlayNoRepeat() is repeating...
+#define HEARTBEAT_SFX_FRAMES (38)
+
 #define BKG_PALETTE 0x100
 
 #define MAP_WIDTH (24)
@@ -74,6 +77,12 @@ struct monster {
 	unsigned char palette[16];
 	char plt_frame_1, plt_frame_2;
 } monster;
+
+struct heartbeat {
+	int delay;
+	char frame;
+	int interval;
+} heartbeat;
 
 const unsigned char monster_pal_eye_anim[] = {
   0x05, 0x06, 0x0A, 0x0B, 0x0F, 0x0F, 0x1F, 0x1F, 0x2F, 0x3F, 
@@ -726,8 +735,25 @@ void display_death_sequence() {
 	}
 }
 
-void interrupt_handler() {
-	PSGFrame();
+void interrupt_handler() {	
+	if (heartbeat.delay > 0) {
+		heartbeat.delay--;
+	} else {
+		heartbeat.frame = HEARTBEAT_SFX_FRAMES;
+		heartbeat.delay = heartbeat.interval + heartbeat.frame;
+		PSGPlayNoRepeat(heartbeat_psg);
+		PSGResume();
+	}
+
+	// PSGPlayNoRepeat is repeating, so this is a workaround.
+	if (heartbeat.frame) {
+		heartbeat.frame--;
+		if (heartbeat.frame) {
+			PSGFrame();
+		} else {
+			PSGStop();
+		}			
+	}
 }
 
 void main() {
@@ -759,9 +785,10 @@ void main() {
 
 	SMS_displayOn();
 	
-	PSGPlay(heartbeat_psg);
+	heartbeat.delay = 0;
+	heartbeat.interval = 70;
 	SMS_setLineInterruptHandler(&interrupt_handler);
-	SMS_setLineCounter(192);
+	SMS_setLineCounter(180);
 	SMS_enableLineInterrupt();
 
 	generate_map();

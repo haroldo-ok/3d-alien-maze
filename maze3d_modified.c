@@ -65,10 +65,12 @@
 unsigned char get_map(int x, int y);
 void set_heartbeat_active(char active);
 
+/*
 void clear_tilemap();
 void clear_sprites();
 void load_standard_palettes();
 void configure_text();
+*/
 
 const unsigned int *test_map_2 = test_map;
 const unsigned int *test_bkg_2 = test_bkg;
@@ -716,6 +718,7 @@ void clear_tilemap() {
 }
 
 void clear_sprites() {
+	clear_sprites();
 	SMS_initSprites();	
 	SMS_finalizeSprites();
 	SMS_copySpritestoSAT();
@@ -803,6 +806,7 @@ void display_death_sequence() {
 	SMS_setBGScrollY(0);
 }
 
+/*
 void display_game_over() {
 	SMS_disableLineInterrupt();	
 	SMS_displayOff();
@@ -832,6 +836,7 @@ void display_game_over() {
 		SMS_waitForVBlank();
 	}
 }
+*/
 
 void draw_escape_sequence_screen() {
 	SMS_waitForVBlank();	
@@ -1046,13 +1051,15 @@ void main() {
 	SMS_useFirstHalfTilesforSprites(1);
 	SMS_setSpriteMode (SPRITEMODE_TALL);
 	
+	player.level = 1;
+
 	while (1) {			
 		switch (state) {
 			
 		case GAMESTATE_TITLE:
 			display_title_screen();
-			player.level = 1;
 			state = GAMESTATE_PLAY;
+			//state = gameplay_loop(); // FIXME: Testing
 			break;
 			
 		case GAMESTATE_PLAY:
@@ -1060,9 +1067,12 @@ void main() {
 			break;
 			
 		case GAMESTATE_DEATH:
-			display_death_sequence();			
+			display_death_sequence();
+			state = GAMESTATE_PLAY;
+			/*
 			display_game_over();
 			state = GAMESTATE_TITLE;
+			*/
 			break;
 			
 		case GAMESTATE_ESCAPE:

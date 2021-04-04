@@ -1,5 +1,9 @@
 # 3D Alien maze
 
+## Video:
+
+[![Gameplay video by Révo](http://i.freegifmaker.me/1/6/1/7/5/4/1617541486915960.gif?1617541497)](https://www.youtube.com/watch?v=itz25823FkI)
+
 ## Known bugs
 
 * Very rarely, the game will still produce unwinnable mazes;
